@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
-  <link rel="stylesheet" href="/static/css/app.css?v=9">
+  <link rel="stylesheet" href="/static/css/app.css?v=10">
   {% if logo_url %}<link rel="icon" href="{{ logo_url }}">{% endif %}
   <meta name="theme-color" content="#6b21a8">
   {% block head %}{% endblock %}
@@ -20,7 +20,7 @@
       <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
     </button>
     <a href="/" class="brand">{% if logo_url %}<img src="{{ logo_url }}" alt="" class="logo">{% endif %}<span class="brand-text"><span class="brand-name">{{ school_name }}</span><span class="brand-sub">ระบบบันทึกการสอน</span></span></a>
-    <a href="/account" class="who" title="บัญชีของฉัน">{{ user.full_name }}</a>
+    <a href="/account" class="who" title="บัญชีของฉัน"><span class="who-name">{{ user.full_name }}</span><span class="who-role">{{ 'ผู้ดูแลระบบ' if is_admin else 'ครู' }}</span></a>
   </header>
   <div id="nav-backdrop" class="nav-backdrop" hidden></div>
   <nav id="nav" class="drawer" aria-label="เมนูหลัก">
@@ -55,7 +55,7 @@
     {% block content %}{% endblock %}
   </main>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="/static/js/api.js?v=9"></script>
+  <script src="/static/js/api.js?v=10"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

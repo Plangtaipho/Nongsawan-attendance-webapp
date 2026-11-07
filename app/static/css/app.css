@@ -47,8 +47,11 @@ h2 { font-size: 1.1rem; margin: calc(var(--space) * 3) 0 var(--space); }
 .brand-name { font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .brand-sub { font-size: .78rem; opacity: .85; }
 .topbar .logo { width: 42px; height: 42px; object-fit: contain; border-radius: 50%; background: #fff; padding: 3px; flex: none; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
-.topbar .who { display: none; color: #fff; text-decoration: none; font-size: .9rem; padding: 6px 12px; border-radius: 999px; background: rgba(255,255,255,.15); }
-@media (min-width: 640px) { .topbar .who { display: inline-block; } }
+.topbar .who { display: flex; flex-direction: column; align-items: flex-end; max-width: 42%; flex: none; color: #fff; text-decoration: none; line-height: 1.2; padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,.15); }
+.who-name { font-size: .85rem; font-weight: 600; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.who-role { font-size: .72rem; opacity: .85; }
+@media (max-width: 420px) { .brand-sub { display: none; } .topbar .logo { width: 36px; height: 36px; } }
+@media (min-width: 640px) { .topbar .who { flex-direction: row; align-items: center; gap: 8px; padding: 6px 14px; border-radius: 999px; } .who-name { font-size: .9rem; } .who-role { font-size: .78rem; padding-left: 8px; border-left: 1px solid rgba(255,255,255,.4); } }
 .menu-btn { flex: none; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; background: rgba(255,255,255,.12); border: 0; border-radius: 12px; color: #fff; cursor: pointer; }
 .menu-btn:hover { background: rgba(255,255,255,.22); }
 .menu-btn svg, .drawer-close svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }

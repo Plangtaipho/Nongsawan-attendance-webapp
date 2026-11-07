@@ -11,7 +11,7 @@
 | Backend API (auth, admin, import, attendance, reports) | Implemented, Tested (pytest 38 ข้อผ่าน) |
 | Frontend 9 หน้า | Implemented, Tested (Playwright บนจอ Pixel 7 ผ่าน) |
 | รายงาน PDF | Implemented, Tested (A4 แนวนอน, ภาษาไทยถูกต้อง, ~41 คน/หน้า) |
-| Deploy Render + TiDB Cloud | ยังไม่ได้ทำ: รอ GitHub repo และบัญชี Render/TiDB |
+| Deploy Render + TiDB Cloud | Deployed 7 พ.ย. 2569 (school-attendance-burk.onrender.com): migration บน TiDB ผ่าน, /healthz และหน้า login ตอบ 200 ตาม Log ของ Render; ยังไม่ได้ทดสอบ flow เต็มบน Production |
 
 ## สมมติฐานที่ใช้ (ยังรอผู้ใช้ยืนยัน)
 1. ครูเลือกห้อง/คาบ/วิชาเองอิสระ ยังไม่ผูกตารางสอน
@@ -24,7 +24,7 @@
 ## ความเสี่ยงที่รู้อยู่
 - Render Free หลับหลังไม่มีคนใช้ 15 นาที (รอ ~1 นาที)
 - TiDB Starter: ถ้าเกินโควตา 50M RU/เดือน จะเชื่อมต่อใหม่ไม่ได้
-- ยังไม่ได้ทดสอบ migration กับ MySQL/TiDB จริง (จะทดสอบตอน Deploy)
+- Migration บน TiDB ผ่านแล้ว (7 พ.ย.)
 - เลขประจำตัวที่ขึ้นต้นด้วย 0 ต้องเก็บเป็น Text ใน Excel ไม่เช่นนั้น Excel จะตัดเลข 0 ทิ้ง
 
 ## Phase 2

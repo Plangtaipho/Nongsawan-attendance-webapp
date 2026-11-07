@@ -1,5 +1,6 @@
 """FastAPI application: middleware, routers, error handlers, first-admin bootstrap."""
 import logging
+from datetime import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -13,7 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from app.config import get_settings
 from app.database import SessionLocal
-from app.models import Role, User
+from app.models import Period, Role, User
 from app.routers import admin, attendance, auth, pages, reports
 from app.security import hash_password
 
@@ -41,11 +42,26 @@ def bootstrap_admin() -> None:
         log.info("Created first admin user %s", settings.initial_admin_username)
 
 
+def bootstrap_periods() -> None:
+    """Create the school's standard periods when none exist yet, so admins do not type them in."""
+    if not settings.default_periods.strip():
+        return
+    with SessionLocal() as db:
+        if db.scalar(select(func.count()).select_from(Period)):
+            return
+        for no, span in enumerate(settings.default_periods.split(","), start=1):
+            start, end = (time.fromisoformat(t.strip()) for t in span.split("-"))
+            db.add(Period(period_no=no, start_time=start, end_time=end))
+        db.commit()
+        log.info("Created %d default periods", no)
+
+
 @asynccontextmanager
 async def lifespan(_: FastAPI):
     if settings.is_production and settings.secret_key == "dev-only-change-me":
         raise RuntimeError("SECRET_KEY must be set in production")
     bootstrap_admin()
+    bootstrap_periods()
     yield
 
 

@@ -16,12 +16,24 @@ from app.models import (
     Term,
 )
 
-STATUS_ORDER = [s.value for s in AttendanceStatus]
-ATTENDED = {AttendanceStatus.present.value, AttendanceStatus.late.value}
+# Reports use the school's three statuses. Older values are folded in: late counts as มา,
+# both kinds of leave count as ลา.
+BUCKETS = ("present", "absent", "leave")
+BUCKET_OF = {
+    AttendanceStatus.present.value: "present",
+    AttendanceStatus.late.value: "present",
+    AttendanceStatus.absent.value: "absent",
+    AttendanceStatus.personal_leave.value: "leave",
+    AttendanceStatus.sick_leave.value: "leave",
+}
+
+
+def bucket(status: AttendanceStatus | str) -> str:
+    return BUCKET_OF[status.value if isinstance(status, AttendanceStatus) else status]
 
 
 def _empty_counts() -> dict[str, int]:
-    return {s: 0 for s in STATUS_ORDER}
+    return {b: 0 for b in BUCKETS}
 
 
 def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) -> dict:
@@ -54,9 +66,10 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
         room = by_room.setdefault(s.classroom_id, {"id": s.classroom_id, "name": s.classroom.name, "counts": _empty_counts(), "checked_periods": []})
         room["checked_periods"].append(s.period.period_no)
         for r in s.records:
-            totals[r.status.value] += 1
-            room["counts"][r.status.value] += 1
-            if r.status != AttendanceStatus.present:
+            b = bucket(r.status)
+            totals[b] += 1
+            room["counts"][b] += 1
+            if b != "present":
                 not_present.append(
                     {
                         "classroom": s.classroom.name,
@@ -64,7 +77,7 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
                         "subject": s.subject.name,
                         "student_code": r.student.student_code,
                         "name": r.student.full_name,
-                        "status": r.status.value,
+                        "status": b,
                         "note": r.note,
                     }
                 )
@@ -74,7 +87,7 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
         "date": day.isoformat(),
         "session_count": len(sessions),
         "totals": totals,
-        "attendance_rate": round(100 * (totals["present"] + totals["late"]) / total_records, 1) if total_records else None,
+        "attendance_rate": round(100 * totals["present"] / total_records, 1) if total_records else None,
         "periods": [p.period_no for p in periods],
         "classrooms": list(by_room.values()),
         "not_present": not_present,
@@ -105,7 +118,7 @@ def term_report(db: Session, term: Term, classroom: Classroom, subject: Subject)
         for s in db.scalars(select(Student).where(Student.id.in_(recorded_ids))):
             students[s.id] = (s, None)
 
-    status_map = {(r.session_id, r.student_id): r.status.value for s in sessions for r in s.records}
+    status_map = {(r.session_id, r.student_id): bucket(r.status) for s in sessions for r in s.records}
     rows = []
     for st, number in sorted(students.values(), key=lambda x: (x[1] is None, x[1] or 0, x[0].student_code)):
         statuses = [status_map.get((s.id, st.id)) for s in sessions]
@@ -114,7 +127,7 @@ def term_report(db: Session, term: Term, classroom: Classroom, subject: Subject)
             if v:
                 counts[v] += 1
         recorded = sum(counts.values())
-        attended = counts["present"] + counts["late"]
+        attended = counts["present"]
         rows.append(
             {
                 "id": st.id,

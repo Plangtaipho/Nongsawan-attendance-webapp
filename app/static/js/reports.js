@@ -35,10 +35,10 @@ document.getElementById("r-show").addEventListener("click", async (e) => {
     document.getElementById("r-body").replaceChildren(...r.students.map((s) => h("tr", {},
       h("td", {}, s.number ?? "-"),
       h("td", {}, s.name),
-      ...["present", "late", "absent", "personal_leave", "sick_leave"].map((k) => h("td", { class: "num" }, s.counts[k])),
+      ...["present", "leave", "absent"].map((k) => h("td", { class: "num" }, s.counts[k])),
       h("td", { class: "num" + (s.percent !== null && s.percent < 80 ? " badge-warn" : "") }, s.percent === null ? "-" : s.percent.toFixed(1)),
     )));
-    if (!r.students.length) document.getElementById("r-body").append(h("tr", {}, h("td", { colspan: "8", class: "empty" }, "ไม่มีนักเรียนในห้องนี้")));
+    if (!r.students.length) document.getElementById("r-body").append(h("tr", {}, h("td", { colspan: "6", class: "empty" }, "ไม่มีนักเรียนในห้องนี้")));
     printEl.href = "/reports/term/print?" + q;
     printEl.classList.remove("hidden");
     document.getElementById("r-result").classList.remove("hidden");

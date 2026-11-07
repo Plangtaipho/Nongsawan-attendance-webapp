@@ -2,8 +2,8 @@ from tests.conftest import Api, session_body
 
 
 def test_daily_dashboard(seed):
-    Api("teacher1").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "late")))
-    Api("teacher2").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "sick_leave", "present"), period="p2"))
+    Api("teacher1").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "personal_leave")))
+    Api("teacher2").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "personal_leave", "present"), period="p2"))
 
     mine = Api("teacher1").get("/api/reports/daily").json()
     assert mine["session_count"] == 1
@@ -11,18 +11,19 @@ def test_daily_dashboard(seed):
 
     school = Api("admin").get("/api/reports/daily", params={"scope": "all"}).json()
     assert school["session_count"] == 2
-    assert school["totals"] == {"present": 3, "late": 1, "absent": 1, "personal_leave": 0, "sick_leave": 1}
-    assert school["attendance_rate"] == round(100 * 4 / 6, 1)
+    assert school["totals"] == {"present": 3, "leave": 2, "absent": 1}
+    assert school["attendance_rate"] == 50.0
     room = next(c for c in school["classrooms"] if c["name"] == "ม.1/1")
     assert sorted(room["checked_periods"]) == [1, 2]
-    assert len(school["not_present"]) == 3  # absent, late, sick leave
+    assert len(school["not_present"]) == 3  # absent + two on leave
+    assert {x["status"] for x in school["not_present"]} == {"absent", "leave"}
 
     # A teacher asking for scope=all still only gets their own.
     assert Api("teacher2").get("/api/reports/daily", params={"scope": "all"}).json()["session_count"] == 1
 
 
 def test_term_report_counts_and_percent(seed):
-    Api("teacher1").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "late")))
+    Api("teacher1").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "present")))
     Api("teacher1").post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "personal_leave"), period="p2"))
     r = Api("teacher2").get(
         "/api/reports/term", params={"term_id": seed["term_id"], "classroom_id": seed["room_id"], "subject_id": seed["subject_id"]}
@@ -33,7 +34,8 @@ def test_term_report_counts_and_percent(seed):
     s1, s2, s3 = data["students"]
     assert s1["percent"] == 100.0 and s1["statuses"] == ["present", "present"]
     assert s2["percent"] == 0.0 and s2["counts"]["absent"] == 2
-    assert s3["percent"] == 50.0  # late counts as attended, leave does not
+    assert s3["percent"] == 50.0 and s3["counts"] == {"present": 1, "leave": 1, "absent": 0}  # leave is not attendance
+    assert s3["statuses"] == ["present", "leave"]
 
 
 def test_print_page_renders_thai(seed):

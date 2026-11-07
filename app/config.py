@@ -30,6 +30,10 @@ class Settings(BaseSettings):
     initial_admin_password: str = ""
     initial_admin_full_name: str = "ผู้ดูแลระบบ"
 
+    # When the periods table is empty at startup, these periods are created (comma-separated HH:MM-HH:MM).
+    # Default: 7 periods of 50 minutes, from 08:40, lunch 12:00-12:30.
+    default_periods: str = "08:40-09:30,09:30-10:20,10:20-11:10,11:10-12:00,12:30-13:20,13:20-14:10,14:10-15:00"
+
     @property
     def is_production(self) -> bool:
         return self.env.lower() == "production"

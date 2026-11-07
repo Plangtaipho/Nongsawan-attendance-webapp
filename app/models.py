@@ -39,6 +39,9 @@ class StudentStatus(str, enum.Enum):
 
 
 class AttendanceStatus(str, enum.Enum):
+    # The school records only มา / ลา / ขาด. "ลา" is stored as personal_leave; late and
+    # sick_leave stay in the enum so the database column needs no change, but new
+    # records cannot use them (see schemas.RecordIn) and reports fold them in.
     present = "present"
     late = "late"
     absent = "absent"

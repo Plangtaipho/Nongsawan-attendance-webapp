@@ -19,9 +19,8 @@ async function load() {
       stat(d.session_count, "คาบที่เช็คแล้ว"),
       stat(d.attendance_rate === null ? "-" : d.attendance_rate + "%", "อัตราเข้าเรียน"),
       stat(t.present, "มา"),
-      stat(t.late, "สาย"),
+      stat(t.leave, "ลา"),
       stat(t.absent, "ขาด"),
-      stat(t.personal_leave + t.sick_leave, "ลากิจ / ลาป่วย"),
     );
 
     document.getElementById("d-rooms").replaceChildren(...d.classrooms.map((r) => {
@@ -30,9 +29,8 @@ async function load() {
         h("td", { class: "nowrap" }, r.name),
         h("td", {}, h("div", { class: "period-dots" }, d.periods.map((p) => h("span", { class: "period-dot" + (checked.has(p) ? " done" : ""), title: "คาบ " + p }, p)))),
         h("td", { class: "num" }, r.counts.present),
-        h("td", { class: "num" }, r.counts.late),
+        h("td", { class: "num" }, r.counts.leave),
         h("td", { class: "num" }, r.counts.absent),
-        h("td", { class: "num" }, r.counts.personal_leave + r.counts.sick_leave),
       );
     }));
 

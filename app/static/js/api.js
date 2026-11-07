@@ -3,14 +3,15 @@
 
 const CSRF = document.querySelector('meta[name="csrf-token"]')?.content || "";
 
+// The school uses three statuses. "ลา" is stored as personal_leave; report APIs call it "leave".
 const STATUS = [
   { key: "present", label: "มา" },
-  { key: "late", label: "สาย" },
+  { key: "personal_leave", label: "ลา" },
   { key: "absent", label: "ขาด" },
-  { key: "personal_leave", label: "ลากิจ" },
-  { key: "sick_leave", label: "ลาป่วย" },
 ];
-const STATUS_LABEL = Object.fromEntries(STATUS.map((s) => [s.key, s.label]));
+const STATUS_LABEL = { present: "มา", personal_leave: "ลา", leave: "ลา", absent: "ขาด", late: "มา", sick_leave: "ลา" };
+// Older records may hold "late" or "sick_leave"; show them as มา / ลา.
+const normalStatus = (s) => (s === "late" ? "present" : s === "sick_leave" ? "personal_leave" : s);
 const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
 class ApiError extends Error {

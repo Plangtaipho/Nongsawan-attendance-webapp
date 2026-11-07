@@ -27,13 +27,13 @@ def test_save_then_reload(seed):
     r = a.post("/api/attendance/sessions", json=session_body(seed))
     assert r.status_code == 200, r.text
     assert r.json()["created"] is True
-    assert r.json()["counts"] == {"present": 1, "absent": 1, "late": 1}
+    assert r.json()["counts"] == {"present": 1, "absent": 1, "personal_leave": 1}
 
     data = a.get(
         "/api/attendance/session",
         params={"classroom_id": seed["room_id"], "period_id": seed["p1"], "session_date": seed["today"].isoformat()},
     ).json()
-    assert [s["status"] for s in data["students"]] == ["present", "absent", "late"]
+    assert [s["status"] for s in data["students"]] == ["present", "absent", "personal_leave"]
     assert data["session"]["topic"] == "สมการเชิงเส้น"
     assert data["session"]["can_edit"] is True
 
@@ -93,3 +93,10 @@ def test_admin_delete_session(seed):
     assert Api("teacher1").delete(f"/api/attendance/sessions/{sid}").status_code == 403
     assert Api("admin").delete(f"/api/attendance/sessions/{sid}").status_code == 204
     assert Api("admin").get("/api/attendance/sessions", params={"mine": False}).json() == []
+
+
+def test_only_present_leave_absent_allowed(seed):
+    a = Api("teacher1")
+    for old in ("late", "sick_leave"):
+        r = a.post("/api/attendance/sessions", json=session_body(seed, statuses=("present", old, "absent")))
+        assert r.status_code == 422, old

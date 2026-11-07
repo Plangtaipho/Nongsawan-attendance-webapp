@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
-  <link rel="stylesheet" href="/static/css/print.css?v=4">
+  <link rel="stylesheet" href="/static/css/print.css?v=5">
 </head>
 <body>
   <div class="toolbar no-print">
@@ -40,7 +40,7 @@
           <th rowspan="2" class="c-name">ชื่อ - สกุล</th>
           {% for i in chunk %}<th class="c-day">{{ sessions[i].date|thai_date }}</th>{% endfor %}
           {% if is_last %}
-          {% for k in ['present','late','absent','personal_leave','sick_leave'] %}<th rowspan="2" class="c-sum">{{ STATUS_LABELS[k] }}</th>{% endfor %}
+          {% for k in ['present','leave','absent'] %}<th rowspan="2" class="c-sum">{{ STATUS_LABELS[k] }}</th>{% endfor %}
           <th rowspan="2" class="c-sum">ร้อยละ</th>
           {% endif %}
         </tr>
@@ -54,7 +54,7 @@
           <td class="c-name">{{ st.name }}</td>
           {% for i in chunk %}{% set v = st.statuses[i] %}<td class="c-day m-{{ v or 'none' }}">{{ STATUS_MARKS[v] if v else '' }}</td>{% endfor %}
           {% if is_last %}
-          {% for k in ['present','late','absent','personal_leave','sick_leave'] %}<td class="c-sum">{{ st.counts[k] }}</td>{% endfor %}
+          {% for k in ['present','leave','absent'] %}<td class="c-sum">{{ st.counts[k] }}</td>{% endfor %}
           <td class="c-sum {{ 'low' if st.percent is not none and st.percent < 80 }}">{{ '%.1f'|format(st.percent) if st.percent is not none else '-' }}</td>
           {% endif %}
         </tr>
@@ -63,7 +63,7 @@
         {% endfor %}
       </tbody>
     </table>
-    <p class="legend">สัญลักษณ์: / = มา, ส = สาย, ข = ขาด, ล = ลากิจ, ป = ลาป่วย · ร้อยละ = (มา + สาย) ÷ จำนวนคาบที่บันทึก · <span class="low">ตัวแดง</span> = ต่ำกว่าร้อยละ 80</p>
+    <p class="legend">สัญลักษณ์: / = มา, ล = ลา, ข = ขาด · ร้อยละ = มา ÷ จำนวนคาบที่บันทึก · <span class="low">ตัวแดง</span> = ต่ำกว่าร้อยละ 80</p>
   </section>
   {% endfor %}
 
@@ -85,6 +85,6 @@
     </div>
     <p class="printed">พิมพ์เมื่อ {{ printed_on }} โดย {{ user.full_name }}</p>
   </section>
-  <script src="/static/js/print.js?v=4"></script>
+  <script src="/static/js/print.js?v=5"></script>
 </body>
 </html>

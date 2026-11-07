@@ -37,7 +37,7 @@ const SHOTS = process.env.SHOTS_DIR || "";
   await page.waitForSelector("#students li");
   assert.strictEqual(await page.locator("#students li").count(), 30);
   await page.locator("#students li").nth(1).getByRole("button", { name: "ขาด" }).click();
-  await page.locator("#students li").nth(4).getByRole("button", { name: "สาย" }).click();
+  await page.locator("#students li").nth(4).getByRole("button", { name: "ลา", exact: true }).click();
   await page.locator("#students li").nth(1).locator("input.note").fill("ไม่สบาย โทรแจ้ง");
   assert.match(await page.textContent("#summary"), /มา 28/);
   await page.fill("#f-topic", "สมการเชิงเส้นตัวแปรเดียว");

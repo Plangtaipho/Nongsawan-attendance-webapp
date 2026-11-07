@@ -138,7 +138,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(126, 34, 206, .4
 .chip-present { color: var(--c-present); background: #dcfce7; }
 .chip-late { color: var(--c-late); background: #fef3c7; }
 .chip-absent { color: var(--c-absent); background: #fee2e2; }
-.chip-personal_leave { color: var(--c-leave); background: #cffafe; }
+.chip-personal_leave, .chip-leave { color: var(--c-leave); background: #cffafe; }
 .chip-sick_leave { color: var(--c-sick); background: #e2e8f0; }
 
 .student-list { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space); }
@@ -150,7 +150,7 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(126, 34, 206, .4
 .student.st-sick_leave { border-left-color: var(--c-sick); }
 .student .name { font-weight: 600; margin-bottom: 6px; }
 .student .no { display: inline-block; min-width: 28px; color: var(--c-muted); font-weight: 400; }
-.status-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; }
+.status-group { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .status-group button {
   min-height: 44px; border: 1.5px solid var(--c-border); border-radius: 10px; background: #fff;
   font: inherit; font-size: .9rem; font-weight: 600; transition: background .12s; color: var(--c-text); cursor: pointer; padding: 0 2px;

@@ -27,7 +27,7 @@ th { background: #f1f5f9; font-weight: 600; }
 .c-t { width: 120px; }
 .m-absent { color: #b91c1c; font-weight: 700; }
 .m-late { color: #b45309; font-weight: 700; }
-.m-personal_leave, .m-sick_leave { color: #0e7490; }
+.m-leave { color: #0e7490; }
 .low { color: #b91c1c; font-weight: 700; }
 .legend, .printed { font-size: 10px; color: #333; margin-top: 6px; }
 .empty { text-align: center; color: #666; padding: 12px; }

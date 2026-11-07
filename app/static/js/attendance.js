@@ -112,7 +112,7 @@ async function load() {
     const q = new URLSearchParams({ classroom_id: els.room.value, period_id: els.period.value, session_date: els.date.value });
     const data = await api("/api/attendance/session?" + q);
     if (seq !== loadSeq) return; // a newer selection is loading
-    students = data.students;
+    students = data.students.map((s) => ({ ...s, status: normalStatus(s.status) }));
     const s = data.session;
     readOnly = !!(s && !s.can_edit);
     els.topic.value = s?.topic || "";

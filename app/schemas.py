@@ -179,10 +179,20 @@ class StudentOut(BaseModel):
 
 
 # ---------- Attendance ----------
+ALLOWED_STATUSES = {AttendanceStatus.present, AttendanceStatus.absent, AttendanceStatus.personal_leave}
+
+
 class RecordIn(In):
     student_id: int
     status: AttendanceStatus
     note: str | None = Field(default=None, max_length=255)
+
+    @field_validator("status")
+    @classmethod
+    def _only_school_statuses(cls, v: AttendanceStatus) -> AttendanceStatus:
+        if v not in ALLOWED_STATUSES:
+            raise ValueError("สถานะต้องเป็น มา ลา หรือ ขาด")
+        return v
 
 
 class SessionIn(In):

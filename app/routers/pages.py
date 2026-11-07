@@ -30,8 +30,8 @@ def _find_logo() -> str:
 LOGO_URL = _find_logo()
 
 THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
-STATUS_LABELS = {"present": "มา", "late": "สาย", "absent": "ขาด", "personal_leave": "ลากิจ", "sick_leave": "ลาป่วย"}
-STATUS_MARKS = {"present": "/", "late": "ส", "absent": "ข", "personal_leave": "ล", "sick_leave": "ป"}
+STATUS_LABELS = {"present": "มา", "leave": "ลา", "absent": "ขาด"}
+STATUS_MARKS = {"present": "/", "leave": "ล", "absent": "ข"}
 
 
 def thai_date(value: str | date, short: bool = True) -> str:

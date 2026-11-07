@@ -114,7 +114,7 @@ def api():
     return Api
 
 
-def session_body(seed, statuses=("present", "absent", "late"), period="p1", day: date | None = None, **extra):
+def session_body(seed, statuses=("present", "absent", "personal_leave"), period="p1", day: date | None = None, **extra):
     return {
         "classroom_id": seed["room_id"],
         "subject_id": seed["subject_id"],

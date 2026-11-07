@@ -13,7 +13,7 @@ from sqlalchemy import func, select
 
 from app.database import SessionLocal
 from app.deps import today
-from app.config import get_settings
+from app.config import get_settings, parse_periods
 from app.models import Classroom, Enrollment, Period, Role, Student, Subject, Term, User
 from app.security import hash_password
 
@@ -37,9 +37,8 @@ def main() -> None:
             Subject(subject_code="ท21101", name="ภาษาไทย 1"),
             Subject(subject_code="อ21101", name="ภาษาอังกฤษ 1"),
         ])
-        # The school's day (same as settings.default_periods): 7 x 50 min from 08:40, lunch 12:00-12:30.
-        for n, span in enumerate(get_settings().default_periods.split(","), start=1):
-            a, b = (time.fromisoformat(t) for t in span.split("-"))
+        # The school's day, same as settings.default_periods (slot 4 is lunch).
+        for n, a, b in parse_periods(get_settings().default_periods):
             db.add(Period(period_no=n, start_time=a, end_time=b))
         rnd = random.Random(42)
         code = 10001

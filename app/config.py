@@ -1,4 +1,5 @@
 """Application settings, read from environment variables (or a local .env file)."""
+from datetime import time
 from functools import lru_cache
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,13 +31,24 @@ class Settings(BaseSettings):
     initial_admin_password: str = ""
     initial_admin_full_name: str = "ผู้ดูแลระบบ"
 
-    # When the periods table is empty at startup, these periods are created (comma-separated HH:MM-HH:MM).
-    # Default: 7 periods of 50 minutes, from 08:40, lunch 12:00-12:30.
-    default_periods: str = "08:40-09:30,09:30-10:20,10:20-11:10,11:10-12:00,12:30-13:20,13:20-14:10,14:10-15:00"
+    # When the periods table is empty at startup, these periods are created: comma-separated
+    # "N=HH:MM-HH:MM" (period number = start-end). Default for this school: 7 slots of which
+    # slot 4 is lunch, so teaching periods are 1-3 in the morning and 5-7 in the afternoon.
+    default_periods: str = "1=08:40-09:30,2=09:30-10:20,3=10:20-11:10,5=12:30-13:20,6=13:20-14:10,7=14:10-15:00"
 
     @property
     def is_production(self) -> bool:
         return self.env.lower() == "production"
+
+
+def parse_periods(spec: str) -> list[tuple[int, time, time]]:
+    """'1=08:40-09:30,2=...' -> [(1, 08:40, 09:30), ...]. Entries without 'N=' are numbered in order."""
+    result = []
+    for i, item in enumerate(x.strip() for x in spec.split(",") if x.strip()):
+        no, _, span = item.rpartition("=")
+        start, end = (time.fromisoformat(t.strip()) for t in span.split("-"))
+        result.append((int(no) if no else i + 1, start, end))
+    return result
 
 
 @lru_cache

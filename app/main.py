@@ -1,6 +1,5 @@
 """FastAPI application: middleware, routers, error handlers, first-admin bootstrap."""
 import logging
-from datetime import time
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -12,7 +11,7 @@ from sqlalchemy import func, select
 from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.config import get_settings
+from app.config import get_settings, parse_periods
 from app.database import SessionLocal
 from app.models import Period, Role, User
 from app.routers import admin, attendance, auth, pages, reports
@@ -49,11 +48,11 @@ def bootstrap_periods() -> None:
     with SessionLocal() as db:
         if db.scalar(select(func.count()).select_from(Period)):
             return
-        for no, span in enumerate(settings.default_periods.split(","), start=1):
-            start, end = (time.fromisoformat(t.strip()) for t in span.split("-"))
+        periods = parse_periods(settings.default_periods)
+        for no, start, end in periods:
             db.add(Period(period_no=no, start_time=start, end_time=end))
         db.commit()
-        log.info("Created %d default periods", no)
+        log.info("Created %d default periods", len(periods))
 
 
 @asynccontextmanager

@@ -161,7 +161,6 @@ async function load() {
     } else {
       els.savedInfo.classList.add("hidden");
     }
-    $("all-present").disabled = readOnly;
     dirty = false;
     renderList();
     els.sheet.classList.remove("hidden");
@@ -221,11 +220,6 @@ els.sub.addEventListener("change", () => { els.subTeacher.classList.toggle("hidd
 els.subTeacher.addEventListener("change", () => { dirty = true; });
 els.activity.addEventListener("input", () => { dirty = true; });
 els.save.addEventListener("click", save);
-$("all-present").addEventListener("click", () => {
-  for (const s of students) s.status = "present";
-  dirty = true;
-  renderList();
-});
 window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
 
 init();

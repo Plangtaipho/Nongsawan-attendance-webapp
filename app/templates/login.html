@@ -3,6 +3,7 @@
 {% block content %}
 <div class="login-wrap">
   <form id="login-form" class="card login-card" novalidate>
+    {% if logo_url %}<img src="{{ logo_url }}" alt="ตราโรงเรียน" class="login-logo">{% endif %}
     <h1>ระบบเช็คชื่อนักเรียน</h1>
     <p class="muted center">{{ school_name }}</p>
     <div id="login-error" class="alert alert-error hidden" role="alert"></div>
@@ -19,4 +20,4 @@
   </form>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/login.js?v=2"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/login.js?v=3"></script>{% endblock %}

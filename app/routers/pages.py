@@ -15,6 +15,19 @@ from app.routers.reports import load_term_report
 from app.security import new_csrf_token
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
+
+
+def _find_logo() -> str:
+    """URL of the school logo if one was added as static/img/logo.(png|jpg|webp|svg), else ""."""
+    for ext in ("png", "webp", "jpg", "svg"):
+        f = STATIC_DIR / "img" / f"logo.{ext}"
+        if f.exists():
+            return f"/static/img/logo.{ext}?v={int(f.stat().st_mtime)}"
+    return ""
+
+
+LOGO_URL = _find_logo()
 
 THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."]
 STATUS_LABELS = {"present": "มา", "late": "สาย", "absent": "ขาด", "personal_leave": "ลากิจ", "sick_leave": "ลาป่วย"}
@@ -44,6 +57,7 @@ def render(request: Request, name: str, user: User | None, **ctx):
             "is_admin": bool(user and user.role == Role.admin),
             "csrf_token": request.session.get("csrf", ""),
             "school_name": get_settings().school_name,
+            "logo_url": LOGO_URL,
             **ctx,
         },
     )

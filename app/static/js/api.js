@@ -12,6 +12,10 @@ const STATUS = [
 const STATUS_LABEL = { present: "มา", personal_leave: "ลา", leave: "ลา", absent: "ขาด", late: "มา", sick_leave: "ลา" };
 // Older records may hold "late" or "sick_leave"; show them as มา / ลา.
 const normalStatus = (s) => (s === "late" ? "present" : s === "sick_leave" ? "personal_leave" : s);
+const LEARNING_AREAS = [
+  "ภาษาไทย", "คณิตศาสตร์", "วิทยาศาสตร์และเทคโนโลยี", "สังคมศึกษา ศาสนาและวัฒนธรรม",
+  "สุขศึกษาและพลศึกษา", "ศิลปะ", "การงานอาชีพ", "ภาษาต่างประเทศ",
+];
 const THAI_MONTHS = ["ม.ค.", "ก.พ.", "มี.ค.", "เม.ย.", "พ.ค.", "มิ.ย.", "ก.ค.", "ส.ค.", "ก.ย.", "ต.ค.", "พ.ย.", "ธ.ค."];
 
 class ApiError extends Error {

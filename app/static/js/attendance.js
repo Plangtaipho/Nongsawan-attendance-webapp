@@ -2,7 +2,7 @@
 
 const $ = (id) => document.getElementById(id);
 const els = {
-  date: $("f-date"), room: $("f-room"), period: $("f-period"), subject: $("f-subject"),
+  date: $("f-date"), room: $("f-room"), period: $("f-period"), area: $("f-area"), subject: $("f-subject"),
   topic: $("f-topic"), activity: $("f-activity"), list: $("students"), summary: $("summary"),
   sheet: $("sheet"), prompt: $("prompt"), loading: $("loading"), savebar: $("savebar"),
   save: $("save-btn"), savedInfo: $("saved-info"), noStudents: $("no-students"), warn: $("setup-warning"),
@@ -23,6 +23,27 @@ function currentPeriodId(periods) {
   return p ? String(p.id) : "";
 }
 
+let allSubjects = []; // [{id, code, name, area}]
+
+// Subjects shown are those of the chosen learning area (กลุ่มสาระ).
+function fillSubjects() {
+  const area = els.area.value;
+  fillSelect(els.subject, allSubjects.filter((s) => s.area === area), {
+    label: (s) => `${s.code} ${s.name}`,
+    placeholder: area ? "เลือกวิชา" : "เลือกกลุ่มสาระก่อน",
+  });
+  els.subject.disabled = !area;
+}
+
+// Select a subject by id, switching the learning area to match.
+function setSubject(id) {
+  const s = allSubjects.find((x) => String(x.id) === String(id));
+  if (!s) return;
+  els.area.value = s.area;
+  fillSubjects();
+  els.subject.value = String(s.id);
+}
+
 async function init() {
   let opt;
   try {
@@ -33,7 +54,9 @@ async function init() {
   els.date.max = opt.today;
   fillSelect(els.room, opt.classrooms, { placeholder: "เลือกห้อง" });
   fillSelect(els.period, opt.periods, { label: (p) => `คาบ ${p.no} (${p.start}-${p.end})`, placeholder: "เลือกคาบ" });
-  fillSelect(els.subject, opt.subjects, { label: (s) => `${s.code} ${s.name}`, placeholder: "เลือกวิชา" });
+  allSubjects = opt.subjects;
+  fillSelect(els.area, opt.learning_areas.map((a) => ({ id: a, name: a })), { placeholder: "เลือกกลุ่มสาระ" });
+  fillSubjects();
 
   const missing = [];
   if (!opt.term) missing.push("ยังไม่ได้ตั้งค่าเทอมปัจจุบัน");
@@ -48,7 +71,7 @@ async function init() {
   // Opened from the history page: /?room=1&period=2&date=2026-11-09
   const qs = new URLSearchParams(location.search);
   els.room.value = qs.get("room") || recall("room");
-  els.subject.value = recall("subject");
+  setSubject(recall("subject"));
   els.period.value = qs.get("period") || currentPeriodId(opt.periods);
   if (qs.get("date") && qs.get("date") <= opt.today) els.date.value = qs.get("date");
   load();
@@ -119,7 +142,7 @@ async function load() {
     els.activity.value = s?.activity || "";
     els.topic.disabled = els.activity.disabled = readOnly;
     if (s) {
-      els.subject.value = String(s.subject_id);
+      setSubject(String(s.subject_id));
       els.savedInfo.textContent = `คาบนี้บันทึกแล้วโดย ${s.teacher_name} (${s.subject_name})` +
         (readOnly ? " · ดูได้อย่างเดียว แก้ไขได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ" : " · แก้ไขแล้วกดบันทึกอีกครั้งได้");
       els.savedInfo.classList.remove("hidden");
@@ -178,6 +201,7 @@ for (const el of [els.date, els.room, els.period]) {
   });
 }
 els.subject.addEventListener("change", () => { dirty = true; });
+els.area.addEventListener("change", () => { fillSubjects(); els.subject.value = ""; dirty = true; });
 els.topic.addEventListener("input", () => { dirty = true; });
 els.activity.addEventListener("input", () => { dirty = true; });
 els.save.addEventListener("click", save);

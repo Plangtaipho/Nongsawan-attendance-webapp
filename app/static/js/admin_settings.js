@@ -58,10 +58,11 @@ const TABS = {
     list: "/api/admin/subjects",
     url: (id) => (id ? `/api/admin/subjects/${id}` : "/api/admin/subjects"),
     updateMethod: "PUT",
-    columns: [["รหัสวิชา", (s) => s.subject_code], ["ชื่อวิชา", (s) => s.name], ["สถานะ", (s) => yesNo(s.is_active)]],
+    columns: [["รหัสวิชา", (s) => s.subject_code], ["ชื่อวิชา", (s) => s.name], ["กลุ่มสาระ", (s) => s.learning_area || "-"], ["สถานะ", (s) => yesNo(s.is_active)]],
     fields: () => [
       { key: "subject_code", label: "รหัสวิชา", required: true, max: 20 },
       { key: "name", label: "ชื่อวิชา", required: true, max: 150 },
+      { key: "learning_area", label: "กลุ่มสาระการเรียนรู้", type: "select", options: [["", "อัตโนมัติจากรหัสวิชา"], ...LEARNING_AREAS.map((a) => [a, a])] },
       { key: "is_active", label: "สถานะ", type: "select", options: [["true", "ใช้งาน"], ["false", "ปิด"]] },
     ],
   },

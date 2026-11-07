@@ -99,7 +99,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(126, 34, 206, .4
 .field { margin-bottom: calc(var(--space) * 1.5); }
 .grid { display: grid; gap: calc(var(--space) * 1.5); grid-template-columns: 1fr; }
 @media (min-width: 640px) { .grid-2 { grid-template-columns: 1fr 1fr; } .grid-4 { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 900px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } .grid-3 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 640px) { .grid-5 { grid-template-columns: 1fr 1fr; } }
+@media (min-width: 900px) { .grid-4 { grid-template-columns: repeat(4, 1fr); } .grid-3 { grid-template-columns: repeat(3, 1fr); } .grid-5 { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1100px) { .grid-5 { grid-template-columns: repeat(5, 1fr); } }
 
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;

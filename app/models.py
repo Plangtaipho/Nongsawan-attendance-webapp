@@ -49,6 +49,29 @@ class AttendanceStatus(str, enum.Enum):
     sick_leave = "sick_leave"
 
 
+# The 8 learning areas of the Thai basic education curriculum, in the order schools list them.
+LEARNING_AREAS = [
+    "ภาษาไทย",
+    "คณิตศาสตร์",
+    "วิทยาศาสตร์และเทคโนโลยี",
+    "สังคมศึกษา ศาสนาและวัฒนธรรม",
+    "สุขศึกษาและพลศึกษา",
+    "ศิลปะ",
+    "การงานอาชีพ",
+    "ภาษาต่างประเทศ",
+]
+# Thai subject codes start with the learning area's letter (ค21101 = คณิตศาสตร์).
+_AREA_BY_CODE_LETTER = {
+    "ท": "ภาษาไทย", "ค": "คณิตศาสตร์", "ว": "วิทยาศาสตร์และเทคโนโลยี", "ส": "สังคมศึกษา ศาสนาและวัฒนธรรม",
+    "พ": "สุขศึกษาและพลศึกษา", "ศ": "ศิลปะ", "ง": "การงานอาชีพ",
+    **{c: "ภาษาต่างประเทศ" for c in "อจญฝขรกซ"},
+}
+
+
+def guess_learning_area(subject_code: str) -> str | None:
+    return _AREA_BY_CODE_LETTER.get(subject_code.strip()[:1])
+
+
 def _enum(e: type[enum.Enum], name: str) -> Enum:
     # Store the enum's value ("present"), not its Python name.
     return Enum(e, name=name, values_callable=lambda x: [m.value for m in x], validate_strings=True)
@@ -144,6 +167,7 @@ class Subject(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     subject_code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
+    learning_area: Mapped[str | None] = mapped_column(String(60), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 

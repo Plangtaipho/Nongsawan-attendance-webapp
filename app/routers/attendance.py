@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session, selectinload
 from app.database import get_db
 from app.deps import get_current_user, require_admin, today, verify_csrf
 from app.models import (
+    LEARNING_AREAS,
     AttendanceRecord,
     AttendanceSession,
     AttendanceStatus,
@@ -46,7 +47,9 @@ def options(db: Session = Depends(get_db), user: User = Depends(get_current_user
         "academic_year": year,
         "term": {"id": term.id, "academic_year": term.academic_year, "term_no": term.term_no} if term else None,
         "classrooms": [{"id": c.id, "name": c.name} for c in rooms],
-        "subjects": [{"id": s.id, "code": s.subject_code, "name": s.name} for s in subjects],
+        "learning_areas": [a for a in LEARNING_AREAS if any(s.learning_area == a for s in subjects)]
+        + (["อื่นๆ"] if any(not s.learning_area for s in subjects) else []),
+        "subjects": [{"id": s.id, "code": s.subject_code, "name": s.name, "area": s.learning_area or "อื่นๆ"} for s in subjects],
         "periods": [
             {"id": p.id, "no": p.period_no, "start": p.start_time.strftime("%H:%M"), "end": p.end_time.strftime("%H:%M")}
             for p in periods

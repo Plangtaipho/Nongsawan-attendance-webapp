@@ -33,6 +33,7 @@ const SHOTS = process.env.SHOTS_DIR || "";
   // 2. Choose room + period + subject, mark two students
   await page.selectOption("#f-room", { label: "ม.1/1" });
   await page.selectOption("#f-period", { index: 1 });
+  await page.selectOption("#f-area", { label: "คณิตศาสตร์" });
   await page.selectOption("#f-subject", { index: 1 });
   await page.waitForSelector("#students li");
   assert.strictEqual(await page.locator("#students li").count(), 30);

@@ -4,7 +4,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models import AttendanceStatus, Role, StudentStatus
+from app.models import LEARNING_AREAS, AttendanceStatus, Role, StudentStatus, guess_learning_area
 from app.security import MAX_PASSWORD_BYTES
 
 
@@ -115,13 +115,23 @@ class ClassroomOut(ORM):
 class SubjectIn(In):
     subject_code: str = Field(min_length=1, max_length=20)
     name: str = Field(min_length=1, max_length=150)
+    learning_area: str | None = None  # empty: guessed from the subject code
     is_active: bool = True
+
+    @model_validator(mode="after")
+    def _area(self):
+        if not self.learning_area:
+            self.learning_area = guess_learning_area(self.subject_code)
+        elif self.learning_area not in LEARNING_AREAS:
+            raise ValueError("กลุ่มสาระไม่ถูกต้อง")
+        return self
 
 
 class SubjectOut(ORM):
     id: int
     subject_code: str
     name: str
+    learning_area: str | None
     is_active: bool
 
 

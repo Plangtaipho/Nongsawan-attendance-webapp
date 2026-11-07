@@ -5,11 +5,12 @@
 <div id="setup-warning" class="alert alert-warn hidden" role="alert"></div>
 
 <section class="card" aria-label="เลือกคาบเรียน">
-  <div class="grid grid-4">
+  <div class="grid grid-5">
     <div><label for="f-date">วันที่</label><input id="f-date" type="date"></div>
     <div><label for="f-room">ห้อง</label><select id="f-room"></select></div>
     <div><label for="f-period">คาบ</label><select id="f-period"></select></div>
-    <div><label for="f-subject">วิชา</label><select id="f-subject"></select></div>
+    <div><label for="f-area">กลุ่มสาระ</label><select id="f-area"></select></div>
+    <div><label for="f-subject">วิชา</label><select id="f-subject" disabled></select></div>
   </div>
 </section>
 
@@ -41,4 +42,4 @@
   <button id="save-btn" class="btn" type="button">บันทึกการเช็คชื่อ</button>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/attendance.js?v=5"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/attendance.js?v=6"></script>{% endblock %}

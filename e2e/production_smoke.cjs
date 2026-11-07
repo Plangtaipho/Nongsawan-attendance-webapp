@@ -62,6 +62,7 @@ const MARK = "[TEST] ทดสอบระบบโดย Claude";
   await page.waitForFunction(() => [...document.querySelectorAll("#f-room option")].some(o => o.textContent === "ทดสอบ/1"));
   await page.selectOption("#f-room", { label: "ทดสอบ/1" });
   await page.selectOption("#f-period", { value: String(per.body.id) });
+  await page.selectOption("#f-area", { label: "อื่นๆ" });
   await page.selectOption("#f-subject", { value: String(subj.body.id) });
   await page.waitForSelector("#students li");
   assert.strictEqual(await page.locator("#students li").count(), 3);

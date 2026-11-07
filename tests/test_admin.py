@@ -205,3 +205,15 @@ def test_import_class_list_flags_code_repeated_across_sheets(seed):
     p = upload(Api("admin"), "/api/admin/students/import/preview", buf.getvalue(), 2569).json()
     assert p["error_count"] == 1
     assert "3 ทับ 2" in p["rows"][1]["errors"][0]
+
+
+def test_subject_learning_area(seed):
+    a = Api("admin")
+    math = a.post("/api/admin/subjects", json={"subject_code": "ค21102", "name": "คณิตศาสตร์เพิ่มเติม"}).json()
+    assert math["learning_area"] == "คณิตศาสตร์"  # guessed from the code
+    art = a.post("/api/admin/subjects", json={"subject_code": "X1", "name": "ชุมนุม", "learning_area": "ศิลปะ"}).json()
+    assert art["learning_area"] == "ศิลปะ"
+    assert a.post("/api/admin/subjects", json={"subject_code": "X2", "name": "?", "learning_area": "ไม่มีจริง"}).status_code == 422
+    opt = a.get("/api/attendance/options").json()
+    assert opt["learning_areas"] == ["คณิตศาสตร์", "ศิลปะ", "อื่นๆ"]  # curriculum order, unassigned last
+    assert {s["code"]: s["area"] for s in opt["subjects"]}["ค21102"] == "คณิตศาสตร์"

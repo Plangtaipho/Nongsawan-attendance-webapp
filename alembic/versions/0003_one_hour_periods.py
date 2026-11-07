@@ -47,6 +47,8 @@ def _as_time(v):
 
 
 def upgrade() -> None:
+    if op.get_context().as_sql:
+        return  # data fix needs a live connection; skipped when printing SQL
     bind = op.get_bind()
     rows = {(r.period_no, _as_time(r.start_time), _as_time(r.end_time)) for r in bind.execute(sa.select(periods))}
     used = bind.execute(sa.select(sa.func.count()).select_from(sessions)).scalar()

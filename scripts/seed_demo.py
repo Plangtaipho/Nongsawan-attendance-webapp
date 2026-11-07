@@ -14,7 +14,7 @@ from sqlalchemy import func, select
 from app.database import SessionLocal
 from app.deps import today
 from app.config import get_settings, parse_periods
-from app.models import Classroom, Enrollment, Period, Role, Student, Subject, Term, User
+from app.models import guess_learning_area, Classroom, Enrollment, Period, Role, Student, Subject, Term, User
 from app.security import hash_password
 
 FIRST = ["ก้อง", "น้ำ", "ภู", "ฟ้า", "ต้น", "แพรว", "บอส", "มายด์", "เจ", "ใบเตย", "โอม", "ปุยฝ้าย", "ไอซ์", "พลอย", "ตะวัน"]
@@ -32,10 +32,10 @@ def main() -> None:
             User(username="admin", full_name="ครูผู้ดูแลระบบ", role=Role.admin, password_hash=pw),
             User(username="teacher1", full_name="ครูสมใจ ตัวอย่าง", password_hash=pw),
             Term(academic_year=year, term_no=2, start_date=d - timedelta(days=30), end_date=d + timedelta(days=120), is_current=True),
-            Subject(subject_code="ค21101", name="คณิตศาสตร์พื้นฐาน 1"),
-            Subject(subject_code="ว21101", name="วิทยาศาสตร์ 1"),
-            Subject(subject_code="ท21101", name="ภาษาไทย 1"),
-            Subject(subject_code="อ21101", name="ภาษาอังกฤษ 1"),
+            Subject(subject_code="ค21101", name="คณิตศาสตร์พื้นฐาน 1", learning_area=guess_learning_area("ค21101")),
+            Subject(subject_code="ว21101", name="วิทยาศาสตร์ 1", learning_area=guess_learning_area("ว21101")),
+            Subject(subject_code="ท21101", name="ภาษาไทย 1", learning_area=guess_learning_area("ท21101")),
+            Subject(subject_code="อ21101", name="ภาษาอังกฤษ 1", learning_area=guess_learning_area("อ21101")),
         ])
         # The school's day, same as settings.default_periods (slot 4 is lunch).
         for n, a, b in parse_periods(get_settings().default_periods):

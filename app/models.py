@@ -1,5 +1,6 @@
 """SQLAlchemy ORM models. Mirrors the approved schema in the project plan."""
 import enum
+import re
 from datetime import date, datetime, time
 
 from sqlalchemy import (
@@ -70,6 +71,18 @@ _AREA_BY_CODE_LETTER = {
 
 def guess_learning_area(subject_code: str) -> str | None:
     return _AREA_BY_CODE_LETTER.get(subject_code.strip()[:1])
+
+
+GRADE_LEVELS = ["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"]
+
+
+def guess_grade_level(subject_code: str) -> str | None:
+    """Standard codes: ค21101 -> 2 = lower secondary, 1 = year 1 -> ม.1; ค32102 -> ม.5.
+    A year digit of 0 (any year) or a non-standard code gives None (subject shown for every grade)."""
+    m = re.fullmatch(r"\D([23])([1-3])\d{3}", subject_code.strip())
+    if not m:
+        return None
+    return f"ม.{int(m.group(2)) + (3 if m.group(1) == '3' else 0)}"
 
 
 def _enum(e: type[enum.Enum], name: str) -> Enum:
@@ -168,6 +181,7 @@ class Subject(Base):
     subject_code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String(150), nullable=False)
     learning_area: Mapped[str | None] = mapped_column(String(60), nullable=True)
+    grade_level: Mapped[str | None] = mapped_column(String(20), nullable=True)  # None = every grade
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 
 

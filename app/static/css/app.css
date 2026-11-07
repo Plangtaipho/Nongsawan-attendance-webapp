@@ -117,6 +117,9 @@ button:focus-visible, a:focus-visible { outline: 3px solid rgba(126, 34, 206, .4
 .btn-secondary { background: #fff; color: var(--c-primary); border-color: #dcc7ea; box-shadow: none; }
 .btn-secondary:hover { background: var(--c-tint); filter: none; }
 .btn-danger { background: var(--c-danger); box-shadow: none; }
+.btn-danger-outline { background: #fff; color: var(--c-danger); border-color: #fecaca; box-shadow: none; }
+.btn-danger-outline:hover { background: #fef2f2; filter: none; }
+.actions .spacer { flex: 1; }
 .btn-sm { min-height: 36px; padding: 0 12px; font-size: .9rem; }
 .btn-block { width: 100%; }
 .actions { display: flex; flex-wrap: wrap; gap: var(--space); }

@@ -217,3 +217,29 @@ def test_subject_learning_area(seed):
     opt = a.get("/api/attendance/options").json()
     assert opt["learning_areas"] == ["คณิตศาสตร์", "ศิลปะ", "อื่นๆ"]  # curriculum order, unassigned last
     assert {s["code"]: s["area"] for s in opt["subjects"]}["ค21102"] == "คณิตศาสตร์"
+
+
+def test_subject_grade_level_filters_by_room(seed):
+    a = Api("admin")
+    m1 = a.post("/api/admin/subjects", json={"subject_code": "ศ21101", "name": "ศิลปะ 1"}).json()
+    assert m1["grade_level"] == "ม.1"  # guessed from a standard code
+    music = a.post("/api/admin/subjects", json={"subject_code": "ศ0201", "name": "ดนตรีศึกษา", "grade_level": "ม.2"}).json()
+    assert music["grade_level"] == "ม.2" and music["learning_area"] == "ศิลปะ"
+    anyg = a.post("/api/admin/subjects", json={"subject_code": "X9", "name": "แนะแนว", "grade_level": ""}).json()
+    assert anyg["grade_level"] is None
+    opt = a.get("/api/attendance/options").json()
+    grades = {s["code"]: s["grade"] for s in opt["subjects"]}
+    assert grades["ศ0201"] == "ม.2" and grades["X9"] is None
+    assert {c["grade"] for c in opt["classrooms"]} == {"ม.1"}
+
+
+def test_delete_student_without_history_and_mark_left_with_history(seed):
+    a = Api("admin")
+    assert a.post("/api/attendance/sessions", json=session_body(seed)).status_code == 200
+    first = seed["students"][0]
+    assert a.delete(f"/api/admin/students/{first}").status_code == 409
+    assert a.patch(f"/api/admin/students/{first}", json={"status": "transferred"}).status_code == 200
+    room = a.get("/api/attendance/session", params={"classroom_id": seed["room_id"], "period_id": seed["p2"], "session_date": seed["today"].isoformat()}).json()
+    assert first not in [s["id"] for s in room["students"]]  # off the class list
+    rep = a.get("/api/reports/term", params={"term_id": seed["term_id"], "classroom_id": seed["room_id"], "subject_id": seed["subject_id"]}).json()
+    assert first in [s["id"] for s in rep["students"]]  # history kept

@@ -1,7 +1,7 @@
 "use strict";
 
 const $ = (id) => document.getElementById(id);
-const STUDENT_STATUS = { active: "กำลังศึกษา", transferred: "ย้ายออก", graduated: "จบการศึกษา", inactive: "พักการเรียน/อื่นๆ" };
+const STUDENT_STATUS = { active: "กำลังศึกษา", transferred: "ลาออก/ย้ายออก", graduated: "จบการศึกษา", inactive: "พักการเรียน/อื่นๆ" };
 let rooms = [];
 let editing = null; // student being edited, or null when adding
 
@@ -46,6 +46,8 @@ function openDialog(s = null) {
   $("sf-number").value = s?.class_number ?? "";
   $("sf-status").value = s?.status || "active";
   $("sf-status-wrap").classList.toggle("hidden", !s);
+  $("s-delete").classList.toggle("hidden", !s);
+  $("s-delete-hint").classList.toggle("hidden", !s);
   $("s-dialog").showModal();
 }
 
@@ -75,6 +77,26 @@ $("s-form").addEventListener("submit", async (e) => {
   }
 });
 $("s-cancel").addEventListener("click", () => $("s-dialog").close());
+$("s-delete").addEventListener("click", async (e) => {
+  const s = editing;
+  if (!s || !confirm(`ลบ ${s.full_name} (${s.student_code}) ออกจากระบบ?`)) return;
+  try {
+    await withBusy(e.currentTarget, () => api(`/api/admin/students/${s.id}`, { method: "DELETE" }));
+    $("s-dialog").close();
+    toast("ลบนักเรียนแล้ว", "success");
+    loadStudents();
+  } catch (err) {
+    if (err.status !== 409) { toast(err.message, "error"); return; }
+    // Has attendance history: keep it, take the student off class lists instead.
+    if (!confirm(`${s.full_name} มีประวัติการบันทึกการสอนแล้ว จึงลบไม่ได้ (เพื่อเก็บประวัติในรายงาน)\n\nเปลี่ยนสถานะเป็น "ลาออก" แทนไหม? ชื่อจะไม่แสดงในหน้าบันทึกการสอนอีก`)) return;
+    try {
+      await api(`/api/admin/students/${s.id}`, { method: "PATCH", body: { status: "transferred" } });
+      $("s-dialog").close();
+      toast("เปลี่ยนสถานะเป็นลาออกแล้ว", "success");
+      loadStudents();
+    } catch (err2) { toast(err2.message, "error"); }
+  }
+});
 $("add-student").addEventListener("click", () => openDialog());
 $("s-room").addEventListener("change", loadStudents);
 let searchTimer;

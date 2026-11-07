@@ -23,12 +23,25 @@ function currentPeriodId(periods) {
   return p ? String(p.id) : "";
 }
 
-let allSubjects = []; // [{id, code, name, area}]
+let allSubjects = []; // [{id, code, name, area, grade}]
+let allRooms = []; // [{id, name, grade}]
 
-// Subjects shown are those of the chosen learning area (กลุ่มสาระ).
+// Subjects for the chosen room's grade (or for every grade), grouped by learning area (กลุ่มสาระ).
+function roomSubjects() {
+  const room = allRooms.find((r) => String(r.id) === els.room.value);
+  return allSubjects.filter((s) => !s.grade || !room || s.grade === room.grade);
+}
+
+function fillAreas() {
+  const present = new Set(roomSubjects().map((s) => s.area));
+  const areas = [...LEARNING_AREAS, "อื่นๆ"].filter((a) => present.has(a));
+  fillSelect(els.area, areas.map((a) => ({ id: a, name: a })), { placeholder: "เลือกกลุ่มสาระ" });
+  fillSubjects();
+}
+
 function fillSubjects() {
   const area = els.area.value;
-  fillSelect(els.subject, allSubjects.filter((s) => s.area === area), {
+  fillSelect(els.subject, roomSubjects().filter((s) => s.area === area), {
     label: (s) => `${s.code} ${s.name}`,
     placeholder: area ? "เลือกวิชา" : "เลือกกลุ่มสาระก่อน",
   });
@@ -38,7 +51,8 @@ function fillSubjects() {
 // Select a subject by id, switching the learning area to match.
 function setSubject(id) {
   const s = allSubjects.find((x) => String(x.id) === String(id));
-  if (!s) return;
+  if (!s || !roomSubjects().includes(s)) return; // a subject of another grade is not offered for this room
+  fillAreas();
   els.area.value = s.area;
   fillSubjects();
   els.subject.value = String(s.id);
@@ -65,9 +79,9 @@ async function init() {
   fillSelect(els.room, opt.classrooms, { placeholder: "เลือกห้อง" });
   fillSelect(els.period, opt.periods, { label: (p) => `คาบ ${p.no} (${p.start}-${p.end})`, placeholder: "เลือกคาบ" });
   allSubjects = opt.subjects;
+  allRooms = opt.classrooms;
   fillSelect(els.subTeacher, opt.teachers, { placeholder: "เลือกครูที่ไม่อยู่ (สอนแทนครู...)" });
-  fillSelect(els.area, opt.learning_areas.map((a) => ({ id: a, name: a })), { placeholder: "เลือกกลุ่มสาระ" });
-  fillSubjects();
+  fillAreas();
 
   const missing = [];
   if (!opt.term) missing.push("ยังไม่ได้ตั้งค่าเทอมปัจจุบัน");
@@ -82,6 +96,7 @@ async function init() {
   // Opened from the history page: /?room=1&period=2&date=2026-11-09
   const qs = new URLSearchParams(location.search);
   els.room.value = qs.get("room") || recall("room");
+  fillAreas();
   setSubject(recall("subject"));
   els.period.value = qs.get("period") || currentPeriodId(opt.periods);
   if (qs.get("date") && qs.get("date") <= opt.today) els.date.value = qs.get("date");
@@ -208,7 +223,12 @@ for (const el of [els.date, els.room, els.period]) {
   el.addEventListener("focus", () => { previous = el.value; });
   el.addEventListener("change", () => {
     if (!confirmDiscard()) { el.value = previous; return; }
-    if (el === els.room) remember("room", el.value);
+    if (el === els.room) {
+      remember("room", el.value);
+      const keep = els.subject.value; // keep the subject if the new room's grade also studies it
+      fillAreas();
+      if (roomSubjects().some((x) => String(x.id) === keep)) setSubject(keep);
+    }
     previous = el.value;
     load();
   });

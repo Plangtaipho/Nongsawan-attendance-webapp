@@ -58,11 +58,12 @@ const TABS = {
     list: "/api/admin/subjects",
     url: (id) => (id ? `/api/admin/subjects/${id}` : "/api/admin/subjects"),
     updateMethod: "PUT",
-    columns: [["รหัสวิชา", (s) => s.subject_code], ["ชื่อวิชา", (s) => s.name], ["กลุ่มสาระ", (s) => s.learning_area || "-"], ["สถานะ", (s) => yesNo(s.is_active)]],
+    columns: [["รหัสวิชา", (s) => s.subject_code], ["ชื่อวิชา", (s) => s.name], ["ชั้น", (s) => s.grade_level || "ทุกชั้น"], ["กลุ่มสาระ", (s) => s.learning_area || "-"], ["สถานะ", (s) => yesNo(s.is_active)]],
     fields: () => [
       { key: "subject_code", label: "รหัสวิชา", required: true, max: 20 },
       { key: "name", label: "ชื่อวิชา", required: true, max: 150 },
       { key: "learning_area", label: "กลุ่มสาระการเรียนรู้", type: "select", options: [["", "อัตโนมัติจากรหัสวิชา"], ...LEARNING_AREAS.map((a) => [a, a])] },
+      { key: "grade_level", label: "ชั้นที่เรียนวิชานี้", type: "select", options: [["", "ทุกชั้น"], ...["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"].map((g) => [g, g])] },
       { key: "is_active", label: "สถานะ", type: "select", options: [["true", "ใช้งาน"], ["false", "ปิด"]] },
     ],
   },
@@ -130,7 +131,20 @@ function openDialog(row = null) {
     }
     return h("div", { class: "field" }, h("label", { for: id }, f.label), input);
   }));
+  if (tab === "subjects") prefillGrade();
   $("dlg").showModal();
+}
+
+// Standard Thai codes (e.g. ศ21101) carry the grade: 2x1 = ม.1, 3x1 = ม.4. Fill it in until the user picks one.
+function prefillGrade() {
+  const code = $("fld-subject_code"), grade = $("fld-grade_level");
+  let touched = Boolean(grade.value);
+  grade.addEventListener("change", () => { touched = true; });
+  code.addEventListener("input", () => {
+    if (touched) return;
+    const m = /^\D([23])([1-3])\d{3}$/.exec(code.value.trim());
+    grade.value = m ? `ม.${Number(m[2]) + (m[1] === "3" ? 3 : 0)}` : "";
+  });
 }
 
 function readForm() {
@@ -142,6 +156,7 @@ function readForm() {
     else if (f.type === "select" && (raw === "true" || raw === "false")) body[f.key] = raw === "true";
     else if (f.key === "term_no") body[f.key] = Number(raw);
     else if (f.type === "password" && !raw) continue;
+    else if (f.key === "grade_level" && tab === "subjects") body[f.key] = raw; // "" = every grade
     else body[f.key] = raw || null;
   }
   return body;

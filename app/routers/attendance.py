@@ -46,10 +46,13 @@ def options(db: Session = Depends(get_db), user: User = Depends(get_current_user
         "today": today().isoformat(),
         "academic_year": year,
         "term": {"id": term.id, "academic_year": term.academic_year, "term_no": term.term_no} if term else None,
-        "classrooms": [{"id": c.id, "name": c.name} for c in rooms],
+        "classrooms": [{"id": c.id, "name": c.name, "grade": c.grade_level} for c in rooms],
         "learning_areas": [a for a in LEARNING_AREAS if any(s.learning_area == a for s in subjects)]
         + (["อื่นๆ"] if any(not s.learning_area for s in subjects) else []),
-        "subjects": [{"id": s.id, "code": s.subject_code, "name": s.name, "area": s.learning_area or "อื่นๆ"} for s in subjects],
+        "subjects": [
+            {"id": s.id, "code": s.subject_code, "name": s.name, "area": s.learning_area or "อื่นๆ", "grade": s.grade_level}
+            for s in subjects
+        ],
         "teachers": [
             {"id": t.id, "name": t.full_name}
             for t in db.scalars(select(User).where(User.is_active.is_(True), User.id != user.id).order_by(User.full_name))

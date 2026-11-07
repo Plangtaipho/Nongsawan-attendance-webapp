@@ -160,3 +160,48 @@ def test_student_list_filters(seed):
     assert len(a.get(f"/api/admin/students?classroom_id={seed['room_id']}").json()) == 3
     found = a.get("/api/admin/students?q=นอก").json()
     assert [s["classroom_name"] for s in found] == ["ม.1/2"]
+
+
+def class_list_sheet(wb, title, room_title, students, header=("ที่", "เลขประจำตัว", "ชื่อ - สกุล")):
+    ws = wb.create_sheet(title)
+    ws.append(["โรงเรียนทดสอบ"])
+    ws.append([f"รายชื่อนักเรียนชั้น{room_title}  ปีการศึกษา 2569"])
+    ws.append(["ครูที่ปรึกษา 1. นายตัวอย่าง"])
+    ws.append([])
+    ws.append([None, *header])  # data starts in column B, as in real school files
+    for i, (code, name) in enumerate(students, start=1):
+        ws.append([None, i, code, name])
+    ws.append([])
+
+
+def test_import_class_list_workbook_one_sheet_per_room(seed):
+    wb = Workbook()
+    wb.remove(wb.active)
+    class_list_sheet(wb, "1 ทับ 1", "มัธยมศึกษาปีที่  1/1", [("90001", "เด็กชายสมมติ  ทดลองดี"), ("90002", "เด็กหญิงตัวอย่าง ใจดี")])
+    class_list_sheet(wb, "4 ทับ 2", "มัธยมศึกษาปีที่ 4/2", [("90003", "นายสมชาย ทดสอบ"), ("90004", "นางสาวสมหญิง  ทดลองใช้ ")],
+                     header=("ลำดับ", "เลขประจำตัว", "ชื่อ สกุล"))
+    wb.create_sheet("สรุป").append(["หน้าสรุป ไม่มีรายชื่อ"])
+    buf = BytesIO()
+    wb.save(buf)
+    a = Api("admin")
+    p = upload(a, "/api/admin/students/import/preview", buf.getvalue(), 2569).json()
+    assert p["error_count"] == 0 and p["new_count"] == 4
+    assert p["rooms"] == [{"name": "ม.1/1", "count": 2}, {"name": "ม.4/2", "count": 2}]
+    first = p["rows"][0]
+    assert (first["prefix"], first["first_name"], first["last_name"], first["class_number"]) == ("เด็กชาย", "สมมติ", "ทดลองดี", 1)
+    assert first["sheet"] == "1 ทับ 1"
+    assert p["rows"][3]["prefix"] == "นางสาว" and p["rows"][3]["last_name"] == "ทดลองใช้"
+    r = upload(a, "/api/admin/students/import/commit", buf.getvalue(), 2569)
+    assert r.status_code == 200 and r.json()["created"] == 4
+
+
+def test_import_class_list_flags_code_repeated_across_sheets(seed):
+    wb = Workbook()
+    wb.remove(wb.active)
+    class_list_sheet(wb, "3 ทับ 2", "มัธยมศึกษาปีที่ 3/2", [("90005", "เด็กชายหนึ่ง  ทดสอบ")])
+    class_list_sheet(wb, "5 ทับ1", "มัธยมศึกษาปีที่ 5/1", [("90005", "นางสาวสอง  ทดสอบ")])
+    buf = BytesIO()
+    wb.save(buf)
+    p = upload(Api("admin"), "/api/admin/students/import/preview", buf.getvalue(), 2569).json()
+    assert p["error_count"] == 1
+    assert "3 ทับ 2" in p["rows"][1]["errors"][0]

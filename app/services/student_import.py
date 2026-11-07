@@ -1,10 +1,12 @@
 """Read a student list from .xlsx, validate every row, and (on commit) save it.
 
-Expected columns (Thai or English header, any order, on the first sheet):
+Template columns (Thai or English header, any order); see parse_xlsx for the class-list layout:
     เลขประจำตัว | คำนำหน้า | ชื่อ | นามสกุล | ชั้น | ห้อง | เลขที่
     student_code | prefix | first_name | last_name | grade_level | room_no | class_number
 """
+from collections import Counter
 from dataclasses import dataclass, field
+import re
 from io import BytesIO
 
 from openpyxl import Workbook, load_workbook
@@ -23,7 +25,8 @@ HEADER_ALIASES = {
     "last_name": {"นามสกุล", "last_name", "last name", "lastname", "surname"},
     "grade_level": {"ชั้น", "ระดับชั้น", "grade_level", "grade"},
     "room_no": {"ห้อง", "room_no", "room"},
-    "class_number": {"เลขที่", "class_number", "no", "number"},
+    "class_number": {"เลขที่", "ที่", "ลำดับ", "ลำดับที่", "class_number", "no", "number"},
+    "full_name": {"ชื่อ-สกุล", "ชื่อ - สกุล", "ชื่อ สกุล", "ชื่อ-นามสกุล", "ชื่อ - นามสกุล", "ชื่อนามสกุล", "full_name", "full name", "name"},
 }
 REQUIRED = ["student_code", "prefix", "first_name", "last_name", "grade_level", "room_no"]
 TEMPLATE_HEADERS = ["เลขประจำตัว", "คำนำหน้า", "ชื่อ", "นามสกุล", "ชั้น", "ห้อง", "เลขที่"]
@@ -36,6 +39,7 @@ class ImportFileError(ValueError):
 @dataclass
 class ImportRow:
     row_no: int  # row number as shown in Excel
+    sheet: str = ""  # sheet name when the file has several sheets
     student_code: str = ""
     prefix: str = ""
     first_name: str = ""
@@ -55,77 +59,135 @@ def _cell_text(v) -> str:
     return str(v).strip()
 
 
+def _norm(text: str) -> str:
+    return re.sub(r"\s+", " ", text.strip().lower()).replace(" - ", "-").replace(" -", "-").replace("- ", "-")
+
+
 def _match_header(text: str) -> str | None:
-    t = text.strip().lower()
+    t = _norm(text)
+    if not t:
+        return None
     for key, names in HEADER_ALIASES.items():
-        if t in {n.lower() for n in names}:
+        if t in {_norm(n) for n in names}:
             return key
     return None
 
 
+# Prefixes written in front of the name with no space, as in most Thai school lists. Longest first.
+NAME_PREFIXES = ["เด็กชาย", "เด็กหญิง", "นางสาว", "ด.ช.", "ด.ญ.", "น.ส.", "นาย", "นาง"]
+# "รายชื่อนักเรียนชั้นมัธยมศึกษาปีที่ 1/1" or "ชั้น ม.1/1" or "ป.3/2"
+ROOM_IN_TITLE = re.compile(r"(มัธยมศึกษาปีที่|ประถมศึกษาปีที่|ม\.|ป\.)\s*(\d{1,2})\s*/\s*(\d{1,2})")
+
+
+def split_full_name(full: str) -> tuple[str, str, str]:
+    """'เด็กชายสมมติ  ทดลองดี' -> ('เด็กชาย', 'สมมติ', 'ทดลองดี'). Missing parts come back empty."""
+    full = re.sub(r"\s+", " ", full).strip()
+    prefix = next((p for p in NAME_PREFIXES if full.startswith(p)), "")
+    rest = full[len(prefix):].strip().split(" ")
+    first = rest[0] if rest and rest[0] else ""
+    return prefix, first, " ".join(rest[1:])
+
+
+def _room_from_title(texts: list[str]) -> tuple[str, str] | None:
+    for t in texts:
+        m = ROOM_IN_TITLE.search(t)
+        if m:
+            level = "ป." if m.group(1).startswith("ป") else "ม."
+            return f"{level}{int(m.group(2))}", str(int(m.group(3)))
+    return None
+
+
+def _find_header(rows: list[tuple]) -> tuple[int, dict[str, int]] | None:
+    """Index of the header row and its columns, looking at the first 15 rows."""
+    for i, row in enumerate(rows[:15]):
+        found: dict[str, int] = {}
+        for idx, v in enumerate(row):
+            key = _match_header(_cell_text(v))
+            if key and key not in found:
+                found[key] = idx
+        has_name = {"first_name", "last_name"} <= found.keys() or "full_name" in found
+        if "student_code" in found and has_name:
+            return i, found
+    return None
+
+
 def parse_xlsx(data: bytes) -> list[ImportRow]:
+    """Read every sheet. Two layouts are accepted, and can be mixed across sheets:
+    1. The template: one row per student with prefix, first name, last name, grade and room columns.
+    2. A class list per sheet, as schools usually keep it: a title such as
+       "รายชื่อนักเรียนชั้นมัธยมศึกษาปีที่ 1/1", then columns ที่ | เลขประจำตัว | ชื่อ - สกุล.
+    Sheets with no recognisable header (cover pages, summaries) are skipped.
+    """
     if len(data) > MAX_FILE_BYTES:
         raise ImportFileError("ไฟล์ใหญ่เกิน 2 MB")
     try:
         wb = load_workbook(BytesIO(data), read_only=True, data_only=True)
     except Exception as exc:  # openpyxl raises several types for bad files
         raise ImportFileError("อ่านไฟล์ไม่ได้ กรุณาใช้ไฟล์ .xlsx") from exc
-    ws = wb.worksheets[0]
-    rows_iter = ws.iter_rows(values_only=True)
-
-    # Find the header row within the first 10 rows (some files have a title row first).
-    columns: dict[str, int] = {}
-    header_row_no = 0
-    for i, row in enumerate(rows_iter, start=1):
-        found = {}
-        for idx, v in enumerate(row):
-            key = _match_header(_cell_text(v))
-            if key and key not in found:
-                found[key] = idx
-        if all(k in found for k in REQUIRED):
-            columns, header_row_no = found, i
-            break
-        if i >= 10:
-            break
-    if not columns:
-        raise ImportFileError("ไม่พบหัวตาราง ต้องมีคอลัมน์: " + ", ".join(TEMPLATE_HEADERS[:6]))
 
     result: list[ImportRow] = []
-    seen_codes: dict[str, int] = {}
-    for row_no, row in enumerate(rows_iter, start=header_row_no + 1):
-        def get(key):
-            idx = columns.get(key)
-            return _cell_text(row[idx]) if idx is not None and idx < len(row) else ""
+    seen_codes: dict[str, str] = {}
+    many_sheets = len(wb.worksheets) > 1
+    no_room_sheets: list[str] = []
+    for ws in wb.worksheets:
+        rows = list(ws.iter_rows(values_only=True, max_row=MAX_ROWS + 50))
+        header = _find_header(rows)
+        if header is None:
+            continue
+        header_idx, columns = header
+        sheet_room = None
+        if not {"grade_level", "room_no"} <= columns.keys():
+            titles = [_cell_text(v) for row in rows[:header_idx] for v in row] + [ws.title]
+            sheet_room = _room_from_title(titles)
+            if sheet_room is None:
+                no_room_sheets.append(ws.title.strip())
+                continue
+        sheet = ws.title.strip() if many_sheets else ""
 
-        values = {k: get(k) for k in HEADER_ALIASES}
-        if not any(values.values()):
-            continue  # blank line
-        if len(result) >= MAX_ROWS:
-            raise ImportFileError(f"ไฟล์มีมากกว่า {MAX_ROWS} แถว")
-        r = ImportRow(row_no=row_no)
-        for k in REQUIRED:
-            setattr(r, k, values[k])
-            if not values[k]:
-                r.errors.append(f"ไม่มี{dict(zip(REQUIRED, TEMPLATE_HEADERS))[k]}")
-        limits = {"student_code": 20, "prefix": 20, "first_name": 100, "last_name": 100, "grade_level": 20, "room_no": 10}
-        for k, n in limits.items():
-            if len(getattr(r, k)) > n:
-                r.errors.append(f"{k} ยาวเกิน {n} ตัวอักษร")
-        if values["class_number"]:
-            try:
-                r.class_number = int(values["class_number"])
-                if not 1 <= r.class_number <= 999:
-                    raise ValueError
-            except ValueError:
-                r.errors.append("เลขที่ต้องเป็นตัวเลข 1-999")
-        if r.student_code:
-            if r.student_code in seen_codes:
-                r.errors.append(f"เลขประจำตัวซ้ำกับแถว {seen_codes[r.student_code]}")
-            else:
-                seen_codes[r.student_code] = row_no
-        result.append(r)
+        for offset, row in enumerate(rows[header_idx + 1:], start=header_idx + 2):
+            def get(key, row=row):
+                idx = columns.get(key)
+                return _cell_text(row[idx]) if idx is not None and idx < len(row) else ""
+
+            values = {k: get(k) for k in HEADER_ALIASES}
+            if not values["student_code"] and not values["full_name"] and not values["first_name"]:
+                continue  # blank line or footer text
+            if len(result) >= MAX_ROWS:
+                raise ImportFileError(f"ไฟล์มีมากกว่า {MAX_ROWS} แถว")
+            if values["full_name"] and not values["first_name"]:
+                p, f, l = split_full_name(values["full_name"])
+                values["prefix"] = values["prefix"] or p
+                values["first_name"], values["last_name"] = f, l
+            if sheet_room:
+                values["grade_level"], values["room_no"] = sheet_room
+            r = ImportRow(row_no=offset, sheet=sheet)
+            for k in REQUIRED:
+                setattr(r, k, values[k])
+                if not values[k]:
+                    r.errors.append(f"ไม่มี{dict(zip(REQUIRED, TEMPLATE_HEADERS))[k]}")
+            limits = {"student_code": 20, "prefix": 20, "first_name": 100, "last_name": 100, "grade_level": 20, "room_no": 10}
+            for k, n in limits.items():
+                if len(getattr(r, k)) > n:
+                    r.errors.append(f"{k} ยาวเกิน {n} ตัวอักษร")
+            if values["class_number"]:
+                try:
+                    r.class_number = int(values["class_number"])
+                    if not 1 <= r.class_number <= 999:
+                        raise ValueError
+                except ValueError:
+                    r.errors.append("เลขที่ต้องเป็นตัวเลข 1-999")
+            where = f"ชีต \"{sheet}\" แถว {offset}" if sheet else f"แถว {offset}"
+            if r.student_code:
+                if r.student_code in seen_codes:
+                    r.errors.append(f"เลขประจำตัวซ้ำกับ {seen_codes[r.student_code]}")
+                else:
+                    seen_codes[r.student_code] = where
+            result.append(r)
     if not result:
-        raise ImportFileError("ไม่พบข้อมูลนักเรียนในไฟล์")
+        if no_room_sheets:
+            raise ImportFileError("ไม่พบชั้น/ห้องในชีต: " + ", ".join(no_room_sheets)
+                                  + " (ต้องมีคอลัมน์ ชั้น และ ห้อง หรือหัวกระดาษเช่น \"มัธยมศึกษาปีที่ 1/1\")")
+        raise ImportFileError("ไม่พบหัวตาราง ต้องมีคอลัมน์ เลขประจำตัว และ ชื่อ-สกุล (หรือ คำนำหน้า, ชื่อ, นามสกุล)")
     return result
 
 
@@ -143,6 +205,7 @@ def preview(db: Session, rows: list[ImportRow], academic_year: int) -> dict:
         "new_count": sum(1 for r in rows if not r.errors and r.action == "new"),
         "update_count": sum(1 for r in rows if not r.errors and r.action == "update"),
         "new_classrooms": [f"{g}/{n}" for g, n in new_rooms],
+        "rooms": [{"name": f"{g}/{n}", "count": c} for (g, n), c in sorted(Counter((r.grade_level, r.room_no) for r in rows if r.grade_level and r.room_no).items())],
         "rows": [r.__dict__ for r in rows],
     }
 

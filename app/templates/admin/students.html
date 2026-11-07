@@ -5,7 +5,7 @@
 
 <section class="card" aria-labelledby="imp-title">
   <h2 id="imp-title" class="mb-0">นำเข้ารายชื่อจากไฟล์ Excel (.xlsx)</h2>
-  <p class="muted small">คอลัมน์: เลขประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชั้น, ห้อง, เลขที่ · ห้องที่ยังไม่มีจะถูกสร้างให้อัตโนมัติ · นักเรียนที่มีอยู่แล้วจะถูกอัปเดตตามไฟล์
+  <p class="muted small">รองรับ 2 แบบ: (1) ไฟล์ตัวอย่าง คอลัมน์ เลขประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชั้น, ห้อง, เลขที่ หรือ (2) ไฟล์รายชื่อแยกชีตละห้อง ที่มีหัวกระดาษ "มัธยมศึกษาปีที่ 1/1" และคอลัมน์ ที่, เลขประจำตัว, ชื่อ - สกุล · ห้องที่ยังไม่มีจะถูกสร้างให้อัตโนมัติ · นักเรียนที่มีอยู่แล้วจะถูกอัปเดตตามไฟล์
     <a href="/api/admin/students/import/template">ดาวน์โหลดไฟล์ตัวอย่าง</a></p>
   <div class="grid grid-3">
     <div><label for="imp-file">ไฟล์ .xlsx (ไม่เกิน 2 MB)</label><input id="imp-file" type="file" accept=".xlsx"></div>
@@ -70,4 +70,4 @@
   </form>
 </dialog>
 {% endblock %}
-{% block scripts %}<script src="/static/js/admin_students.js?v=1"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/admin_students.js?v=2"></script>{% endblock %}

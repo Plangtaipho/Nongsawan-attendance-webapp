@@ -103,13 +103,14 @@ $("imp-preview").addEventListener("click", async (e) => {
     const summary = $("imp-summary");
     const parts = [`ทั้งหมด ${p.total} แถว`, `เพิ่มใหม่ ${p.new_count}`, `อัปเดต ${p.update_count}`];
     if (p.new_classrooms.length) parts.push(`สร้างห้องใหม่: ${p.new_classrooms.join(", ")}`);
+    if (p.rooms && p.rooms.length) parts.push(`แยกห้อง: ${p.rooms.map((r) => `${r.name} (${r.count})`).join(", ")}`);
     if (p.error_count) parts.push(`ผิดพลาด ${p.error_count} แถว (แก้ไฟล์แล้วตรวจสอบใหม่)`);
     summary.textContent = parts.join(" · ");
     summary.className = "alert " + (p.error_count ? "alert-error" : "alert-info");
     // Errors first, so they are easy to find in long files.
-    const rows = [...p.rows].sort((a, b) => (b.errors.length > 0) - (a.errors.length > 0) || a.row_no - b.row_no);
+    const rows = p.rows.map((r, i) => ({ ...r, i })).sort((a, b) => (b.errors.length > 0) - (a.errors.length > 0) || a.i - b.i);
     $("imp-body").replaceChildren(...rows.map((r) => h("tr", { class: r.errors.length ? "row-error" : "" },
-      h("td", {}, r.row_no),
+      h("td", { class: "nowrap" }, r.sheet ? `${r.sheet}: ${r.row_no}` : r.row_no),
       h("td", {}, r.student_code),
       h("td", {}, `${r.prefix}${r.first_name} ${r.last_name}`),
       h("td", { class: "nowrap" }, r.grade_level && r.room_no ? `${r.grade_level}/${r.room_no}` : "-"),

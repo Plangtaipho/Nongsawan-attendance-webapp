@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}บัญชีของฉัน{% endblock %}
+{% block content %}
+<h1>บัญชีของฉัน</h1>
+<section class="card">
+  <p class="mb-0"><strong>{{ user.full_name }}</strong></p>
+  <p class="muted">ชื่อผู้ใช้: {{ user.username }} · สิทธิ์: {{ 'ผู้ดูแลระบบ' if is_admin else 'ครู' }}</p>
+</section>
+<form id="pw-form" class="card" novalidate>
+  <h2>เปลี่ยนรหัสผ่าน</h2>
+  <div class="field"><label for="pw-current">รหัสผ่านปัจจุบัน</label><input id="pw-current" type="password" autocomplete="current-password" required></div>
+  <div class="field"><label for="pw-new">รหัสผ่านใหม่ (อย่างน้อย 8 ตัวอักษร)</label><input id="pw-new" type="password" autocomplete="new-password" minlength="8" required></div>
+  <div class="field"><label for="pw-confirm">ยืนยันรหัสผ่านใหม่</label><input id="pw-confirm" type="password" autocomplete="new-password" required></div>
+  <button class="btn" type="submit">บันทึกรหัสผ่านใหม่</button>
+</form>
+{% endblock %}
+{% block scripts %}<script src="/static/js/account.js?v=1"></script>{% endblock %}

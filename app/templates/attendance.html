@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}เช็คชื่อ{% endblock %}
+{% block content %}
+<h1>เช็คชื่อนักเรียน</h1>
+<div id="setup-warning" class="alert alert-warn hidden" role="alert"></div>
+
+<section class="card" aria-label="เลือกคาบเรียน">
+  <div class="grid grid-4">
+    <div><label for="f-date">วันที่</label><input id="f-date" type="date"></div>
+    <div><label for="f-room">ห้อง</label><select id="f-room"></select></div>
+    <div><label for="f-period">คาบ</label><select id="f-period"></select></div>
+    <div><label for="f-subject">วิชา</label><select id="f-subject"></select></div>
+  </div>
+</section>
+
+<div id="prompt" class="empty">เลือกห้องและคาบเพื่อแสดงรายชื่อนักเรียน</div>
+<div id="loading" class="loading hidden">กำลังโหลดรายชื่อ...</div>
+
+<section id="sheet" class="hidden" aria-label="รายชื่อนักเรียน">
+  <div id="saved-info" class="alert alert-info hidden"></div>
+  <div class="row-between">
+    <div id="summary" class="summary" aria-live="polite"></div>
+    <button id="all-present" class="btn btn-secondary btn-sm" type="button">ทุกคนมา</button>
+  </div>
+  <ul id="students" class="student-list"></ul>
+  <div id="no-students" class="empty hidden">ห้องนี้ยังไม่มีนักเรียน กรุณาให้ผู้ดูแลระบบนำเข้ารายชื่อก่อน</div>
+
+  <div class="card mt-2">
+    <div class="field">
+      <label for="f-topic">หัวข้อที่สอนวันนี้</label>
+      <input id="f-topic" maxlength="500" placeholder="เช่น สมการเชิงเส้นตัวแปรเดียว">
+    </div>
+    <div class="field mb-0">
+      <label for="f-activity">กิจกรรม / หมายเหตุ</label>
+      <textarea id="f-activity" maxlength="5000" placeholder="เช่น ทำแบบฝึกหัดหน้า 25 ข้อ 1-10"></textarea>
+    </div>
+  </div>
+</section>
+
+<div id="savebar" class="savebar hidden">
+  <button id="save-btn" class="btn" type="button">บันทึกการเช็คชื่อ</button>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/attendance.js?v=1"></script>{% endblock %}

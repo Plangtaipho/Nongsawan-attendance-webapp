@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}สรุปรายวัน{% endblock %}
+{% block content %}
+<h1>สรุปการเข้าเรียนรายวัน</h1>
+<section class="card">
+  <div class="grid grid-3">
+    <div><label for="d-date">วันที่</label><input id="d-date" type="date"></div>
+    {% if is_admin %}
+    <div><label for="d-scope">แสดง</label>
+      <select id="d-scope"><option value="all">ทั้งโรงเรียน</option><option value="mine">เฉพาะที่ฉันเช็ค</option></select>
+    </div>
+    {% endif %}
+  </div>
+</section>
+<div id="d-loading" class="loading">กำลังโหลด...</div>
+<div id="d-content" class="hidden">
+  <div id="d-stats" class="stat-grid"></div>
+  <h2>รายห้อง</h2>
+  <p class="muted small">ช่องสีเขียว = คาบที่เช็คชื่อแล้ว</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ห้อง</th><th>คาบที่เช็คแล้ว</th><th class="num">มา</th><th class="num">สาย</th><th class="num">ขาด</th><th class="num">ลา</th></tr></thead>
+      <tbody id="d-rooms"></tbody>
+    </table>
+  </div>
+  <h2>นักเรียนที่ไม่ได้มาเรียนตามปกติ</h2>
+  <div class="table-wrap">
+    <table id="d-absent-table">
+      <thead><tr><th>ห้อง</th><th>คาบ</th><th>นักเรียน</th><th>สถานะ</th><th>วิชา</th><th>หมายเหตุ</th></tr></thead>
+      <tbody id="d-absent"></tbody>
+    </table>
+  </div>
+  <div id="d-absent-empty" class="empty hidden">ไม่มี</div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/dashboard.js?v=1"></script>{% endblock %}

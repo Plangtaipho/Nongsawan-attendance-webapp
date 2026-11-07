@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>รายงานการเข้าเรียน {{ report.classroom.name }} {{ report.subject.code }} เทอม {{ report.term.term_no }}/{{ report.term.academic_year }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/print.css?v=1">
+</head>
+<body>
+  <div class="toolbar no-print">
+    <a href="/reports">&larr; กลับ</a>
+    <button id="print-btn" type="button">พิมพ์ / บันทึกเป็น PDF</button>
+    <span class="hint">ในหน้าต่างพิมพ์ เลือก "บันทึกเป็น PDF" และแนวกระดาษ "แนวนอน"</span>
+  </div>
+
+  {% set sessions = report.sessions %}
+  {% for chunk in chunks %}
+  {% set is_last = loop.last %}
+  <section class="sheet">
+    <header class="head">
+      <div class="school">{{ school_name }}</div>
+      <h1>แบบบันทึกเวลาเรียน</h1>
+      <div class="meta">
+        <span>ชั้น {{ report.classroom.name }}</span>
+        <span>วิชา {{ report.subject.code }} {{ report.subject.name }}</span>
+        <span>ภาคเรียนที่ {{ report.term.term_no }} ปีการศึกษา {{ report.term.academic_year }}</span>
+        {% if chunks|length > 1 %}<span>แผ่นที่ {{ loop.index }}/{{ chunks|length }}</span>{% endif %}
+      </div>
+    </header>
+
+    <table class="grid">
+      <thead>
+        <tr>
+          <th rowspan="2" class="c-no">เลขที่</th>
+          <th rowspan="2" class="c-code">เลขประจำตัว</th>
+          <th rowspan="2" class="c-name">ชื่อ - สกุล</th>
+          {% for i in chunk %}<th class="c-day">{{ sessions[i].date|thai_date }}</th>{% endfor %}
+          {% if is_last %}
+          {% for k in ['present','late','absent','personal_leave','sick_leave'] %}<th rowspan="2" class="c-sum">{{ STATUS_LABELS[k] }}</th>{% endfor %}
+          <th rowspan="2" class="c-sum">ร้อยละ</th>
+          {% endif %}
+        </tr>
+        <tr>{% for i in chunk %}<th class="c-day">คาบ {{ sessions[i].period_no }}</th>{% endfor %}</tr>
+      </thead>
+      <tbody>
+        {% for st in report.students %}
+        <tr>
+          <td class="c-no">{{ st.number if st.number is not none else '' }}</td>
+          <td class="c-code">{{ st.code }}</td>
+          <td class="c-name">{{ st.name }}</td>
+          {% for i in chunk %}{% set v = st.statuses[i] %}<td class="c-day m-{{ v or 'none' }}">{{ STATUS_MARKS[v] if v else '' }}</td>{% endfor %}
+          {% if is_last %}
+          {% for k in ['present','late','absent','personal_leave','sick_leave'] %}<td class="c-sum">{{ st.counts[k] }}</td>{% endfor %}
+          <td class="c-sum {{ 'low' if st.percent is not none and st.percent < 80 }}">{{ '%.1f'|format(st.percent) if st.percent is not none else '-' }}</td>
+          {% endif %}
+        </tr>
+        {% else %}
+        <tr><td colspan="99" class="empty">ไม่มีนักเรียนในห้องนี้</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <p class="legend">สัญลักษณ์: / = มา, ส = สาย, ข = ขาด, ล = ลากิจ, ป = ลาป่วย · ร้อยละ = (มา + สาย) ÷ จำนวนคาบที่บันทึก · <span class="low">ตัวแดง</span> = ต่ำกว่าร้อยละ 80</p>
+  </section>
+  {% endfor %}
+
+  <section class="sheet">
+    <h2>บันทึกหัวข้อการสอน ({{ sessions|length }} คาบ)</h2>
+    <table class="topics">
+      <thead><tr><th class="c-i">ที่</th><th class="c-date">วันที่</th><th class="c-p">คาบ</th><th>หัวข้อที่สอน</th><th>กิจกรรม / หมายเหตุ</th><th class="c-t">ผู้สอน</th></tr></thead>
+      <tbody>
+        {% for s in sessions %}
+        <tr><td class="c-i">{{ loop.index }}</td><td class="c-date">{{ s.date|thai_date }}</td><td class="c-p">{{ s.period_no }}</td><td>{{ s.topic or '-' }}</td><td>{{ s.activity or '' }}</td><td class="c-t">{{ s.teacher }}</td></tr>
+        {% else %}
+        <tr><td colspan="6" class="empty">ยังไม่มีการเช็คชื่อในเทอมนี้</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="sign">
+      <div>ลงชื่อ ........................................ ครูผู้สอน</div>
+      <div>ลงชื่อ ........................................ ผู้บริหาร</div>
+    </div>
+    <p class="printed">พิมพ์เมื่อ {{ printed_on }} โดย {{ user.full_name }}</p>
+  </section>
+  <script src="/static/js/print.js?v=1"></script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}ประวัติการเช็คชื่อ{% endblock %}
+{% block content %}
+<h1>ประวัติการเช็คชื่อ</h1>
+<section class="card">
+  <div class="grid grid-3">
+    <div><label for="h-from">ตั้งแต่วันที่</label><input id="h-from" type="date"></div>
+    <div><label for="h-to">ถึงวันที่</label><input id="h-to" type="date"></div>
+    {% if is_admin %}
+    <div><label for="h-scope">แสดง</label>
+      <select id="h-scope"><option value="mine">เฉพาะของฉัน</option><option value="all">ครูทุกคน</option></select>
+    </div>
+    {% endif %}
+  </div>
+</section>
+<div id="h-loading" class="loading">กำลังโหลด...</div>
+<div class="table-wrap">
+  <table id="h-table" class="hidden">
+    <thead><tr><th>วันที่</th><th>คาบ</th><th>ห้อง</th><th>วิชา / หัวข้อ</th><th>สรุป</th>{% if is_admin %}<th>ผู้บันทึก</th>{% endif %}<th></th></tr></thead>
+    <tbody id="h-body"></tbody>
+  </table>
+</div>
+<div id="h-empty" class="empty hidden">ยังไม่มีการเช็คชื่อในช่วงนี้</div>
+<div class="center mt-2"><button id="h-more" class="btn btn-secondary hidden" type="button">โหลดเพิ่ม</button></div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/history.js?v=1"></script>{% endblock %}

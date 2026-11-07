@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}ตั้งค่าระบบ{% endblock %}
+{% block content %}
+<h1>ตั้งค่าระบบ</h1>
+<div class="tabs" role="tablist" aria-label="หมวดการตั้งค่า">
+  <button role="tab" type="button" data-tab="users" aria-selected="true">ครูและผู้ดูแล</button>
+  <button role="tab" type="button" data-tab="terms" aria-selected="false">ภาคเรียน</button>
+  <button role="tab" type="button" data-tab="classrooms" aria-selected="false">ห้องเรียน</button>
+  <button role="tab" type="button" data-tab="subjects" aria-selected="false">รายวิชา</button>
+  <button role="tab" type="button" data-tab="periods" aria-selected="false">คาบเรียน</button>
+</div>
+<div class="row-between">
+  <p id="tab-hint" class="muted small mb-0"></p>
+  <button id="add-btn" class="btn btn-sm" type="button">+ เพิ่ม</button>
+</div>
+<div id="loading" class="loading hidden">กำลังโหลด...</div>
+<div class="table-wrap mt-2">
+  <table>
+    <thead id="t-head"></thead>
+    <tbody id="t-body"></tbody>
+  </table>
+</div>
+<div id="t-empty" class="empty hidden">ยังไม่มีข้อมูล</div>
+
+<dialog id="dlg">
+  <form id="dlg-form" method="dialog" novalidate>
+    <h2 id="dlg-title"></h2>
+    <div id="dlg-fields"></div>
+    <div class="actions">
+      <button class="btn" type="submit">บันทึก</button>
+      <button class="btn btn-secondary" type="button" id="dlg-cancel">ยกเลิก</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}<script src="/static/js/admin_settings.js?v=1"></script>{% endblock %}

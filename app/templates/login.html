@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}เข้าสู่ระบบ{% endblock %}
+{% block content %}
+<div class="login-wrap">
+  <form id="login-form" class="card login-card" novalidate>
+    <h1>ระบบเช็คชื่อนักเรียน</h1>
+    <p class="muted center">{{ school_name }}</p>
+    <div id="login-error" class="alert alert-error hidden" role="alert"></div>
+    <div class="field">
+      <label for="username">ชื่อผู้ใช้</label>
+      <input id="username" name="username" autocomplete="username" autocapitalize="none" required maxlength="50">
+    </div>
+    <div class="field">
+      <label for="password">รหัสผ่าน</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="200">
+    </div>
+    <button class="btn btn-block" type="submit">เข้าสู่ระบบ</button>
+    <p class="muted small mt-2">ลืมรหัสผ่าน ติดต่อผู้ดูแลระบบของโรงเรียน</p>
+  </form>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/static/js/login.js?v=1"></script>{% endblock %}

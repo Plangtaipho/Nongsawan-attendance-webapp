@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% block title %}จัดการนักเรียน{% endblock %}
+{% block content %}
+<h1>จัดการนักเรียน</h1>
+
+<section class="card" aria-labelledby="imp-title">
+  <h2 id="imp-title" class="mb-0">นำเข้ารายชื่อจากไฟล์ Excel (.xlsx)</h2>
+  <p class="muted small">คอลัมน์: เลขประจำตัว, คำนำหน้า, ชื่อ, นามสกุล, ชั้น, ห้อง, เลขที่ · ห้องที่ยังไม่มีจะถูกสร้างให้อัตโนมัติ · นักเรียนที่มีอยู่แล้วจะถูกอัปเดตตามไฟล์
+    <a href="/api/admin/students/import/template">ดาวน์โหลดไฟล์ตัวอย่าง</a></p>
+  <div class="grid grid-3">
+    <div><label for="imp-file">ไฟล์ .xlsx (ไม่เกิน 2 MB)</label><input id="imp-file" type="file" accept=".xlsx"></div>
+    <div><label for="imp-year">ปีการศึกษา (พ.ศ.)</label><input id="imp-year" type="number" min="2500" max="2700"></div>
+  </div>
+  <div class="actions mt-2">
+    <button id="imp-preview" class="btn btn-secondary" type="button">ตรวจสอบไฟล์</button>
+    <button id="imp-commit" class="btn hidden" type="button">ยืนยันนำเข้า</button>
+  </div>
+  <div id="imp-result" class="mt-2 hidden">
+    <div id="imp-summary" class="alert"></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>แถว</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>ห้อง</th><th>เลขที่</th><th>ผลตรวจสอบ</th></tr></thead>
+        <tbody id="imp-body"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section class="card">
+  <div class="row-between">
+    <h2 class="mb-0">รายชื่อนักเรียน</h2>
+    <button id="add-student" class="btn btn-sm" type="button">+ เพิ่มนักเรียนทีละคน</button>
+  </div>
+  <div class="grid grid-2 mt-2">
+    <div><label for="s-room">ห้อง</label><select id="s-room"></select></div>
+    <div><label for="s-q">ค้นหา (ชื่อ นามสกุล หรือเลขประจำตัว)</label><input id="s-q" type="search" maxlength="100"></div>
+  </div>
+</section>
+<div id="s-loading" class="loading hidden">กำลังโหลด...</div>
+<div class="table-wrap">
+  <table>
+    <thead><tr><th>ห้อง</th><th>เลขที่</th><th>เลขประจำตัว</th><th>ชื่อ - สกุล</th><th>สถานะ</th><th></th></tr></thead>
+    <tbody id="s-body"></tbody>
+  </table>
+</div>
+<div id="s-empty" class="empty hidden">ไม่พบนักเรียน</div>
+
+<dialog id="s-dialog">
+  <form id="s-form" method="dialog" novalidate>
+    <h2 id="s-dialog-title">เพิ่มนักเรียน</h2>
+    <div class="grid grid-2">
+      <div class="field"><label for="sf-code">เลขประจำตัว</label><input id="sf-code" maxlength="20" required></div>
+      <div class="field"><label for="sf-prefix">คำนำหน้า</label><input id="sf-prefix" maxlength="20" list="prefixes" required></div>
+      <div class="field"><label for="sf-first">ชื่อ</label><input id="sf-first" maxlength="100" required></div>
+      <div class="field"><label for="sf-last">นามสกุล</label><input id="sf-last" maxlength="100" required></div>
+      <div class="field"><label for="sf-room">ห้อง</label><select id="sf-room" required></select></div>
+      <div class="field"><label for="sf-number">เลขที่</label><input id="sf-number" type="number" min="1" max="999"></div>
+      <div class="field" id="sf-status-wrap"><label for="sf-status">สถานะ</label>
+        <select id="sf-status">
+          <option value="active">กำลังศึกษา</option><option value="transferred">ย้ายออก</option>
+          <option value="graduated">จบการศึกษา</option><option value="inactive">พักการเรียน/อื่นๆ</option>
+        </select>
+      </div>
+    </div>
+    <datalist id="prefixes"><option value="ด.ช."><option value="ด.ญ."><option value="นาย"><option value="นางสาว"></datalist>
+    <div class="actions">
+      <button class="btn" type="submit" value="save">บันทึก</button>
+      <button class="btn btn-secondary" type="button" id="s-cancel">ยกเลิก</button>
+    </div>
+  </form>
+</dialog>
+{% endblock %}
+{% block scripts %}<script src="/static/js/admin_students.js?v=1"></script>{% endblock %}

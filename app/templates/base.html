@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="csrf-token" content="{{ csrf_token }}">
+  <title>{% block title %}เช็คชื่อนักเรียน{% endblock %} · {{ school_name }}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="/static/css/app.css?v=1">
+  {% block head %}{% endblock %}
+</head>
+<body>
+{% if user %}
+  <header class="topbar">
+    <span class="brand">{{ school_name }}</span>
+    <span class="who">{{ user.full_name }}</span>
+    <button id="menu-btn" class="menu-btn" type="button" aria-expanded="false" aria-controls="nav">เมนู</button>
+  </header>
+  <nav id="nav" class="nav" aria-label="เมนูหลัก">
+    <a href="/" class="{{ 'active' if active == 'attendance' }}">เช็คชื่อ</a>
+    <a href="/history" class="{{ 'active' if active == 'history' }}">ประวัติการเช็คชื่อ</a>
+    <a href="/dashboard" class="{{ 'active' if active == 'dashboard' }}">สรุปรายวัน</a>
+    <a href="/reports" class="{{ 'active' if active == 'reports' }}">รายงานรายเทอม</a>
+    {% if is_admin %}
+    <a href="/admin/students" class="{{ 'active' if active == 'students' }}">จัดการนักเรียน</a>
+    <a href="/admin/settings" class="{{ 'active' if active == 'settings' }}">ตั้งค่าระบบ</a>
+    {% endif %}
+    <span class="spacer"></span>
+    <a href="/account" class="{{ 'active' if active == 'account' }}">บัญชีของฉัน</a>
+    <button id="logout-btn" type="button">ออกจากระบบ</button>
+  </nav>
+{% endif %}
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+  <div id="toast" role="status" aria-live="polite"></div>
+  <script src="/static/js/api.js?v=1"></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

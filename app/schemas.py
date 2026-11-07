@@ -4,7 +4,7 @@ from typing import Annotated
 
 from pydantic import AfterValidator, BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.models import LEARNING_AREAS, AttendanceStatus, Role, StudentStatus, guess_grade_level, guess_learning_area
+from app.models import LEARNING_AREAS, AttendanceStatus, Role, StudentStatus, guess_learning_area
 from app.security import MAX_PASSWORD_BYTES
 
 
@@ -121,9 +121,7 @@ class SubjectIn(In):
 
     @model_validator(mode="after")
     def _area(self):
-        if self.grade_level is None:  # not given: guess from a standard code; "" means every grade
-            self.grade_level = guess_grade_level(self.subject_code)
-        self.grade_level = self.grade_level or None
+        self.grade_level = self.grade_level or None  # set by the admin only, never guessed
         if not self.learning_area:
             self.learning_area = guess_learning_area(self.subject_code)
         elif self.learning_area not in LEARNING_AREAS:

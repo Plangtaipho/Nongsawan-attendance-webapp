@@ -76,14 +76,6 @@ def guess_learning_area(subject_code: str) -> str | None:
 GRADE_LEVELS = ["ม.1", "ม.2", "ม.3", "ม.4", "ม.5", "ม.6"]
 
 
-def guess_grade_level(subject_code: str) -> str | None:
-    """Standard codes: ค21101 -> 2 = lower secondary, 1 = year 1 -> ม.1; ค32102 -> ม.5.
-    A year digit of 0 (any year) or a non-standard code gives None (subject shown for every grade)."""
-    m = re.fullmatch(r"\D([23])([1-3])\d{3}", subject_code.strip())
-    if not m:
-        return None
-    return f"ม.{int(m.group(2)) + (3 if m.group(1) == '3' else 0)}"
-
 
 def _enum(e: type[enum.Enum], name: str) -> Enum:
     # Store the enum's value ("present"), not its Python name.

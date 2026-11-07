@@ -131,21 +131,9 @@ function openDialog(row = null) {
     }
     return h("div", { class: "field" }, h("label", { for: id }, f.label), input);
   }));
-  if (tab === "subjects") prefillGrade();
   $("dlg").showModal();
 }
 
-// Standard Thai codes (e.g. ศ21101) carry the grade: 2x1 = ม.1, 3x1 = ม.4. Fill it in until the user picks one.
-function prefillGrade() {
-  const code = $("fld-subject_code"), grade = $("fld-grade_level");
-  let touched = Boolean(grade.value);
-  grade.addEventListener("change", () => { touched = true; });
-  code.addEventListener("input", () => {
-    if (touched) return;
-    const m = /^\D([23])([1-3])\d{3}$/.exec(code.value.trim());
-    grade.value = m ? `ม.${Number(m[2]) + (m[1] === "3" ? 3 : 0)}` : "";
-  });
-}
 
 function readForm() {
   const body = {};

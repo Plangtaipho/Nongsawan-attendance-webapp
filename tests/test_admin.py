@@ -222,7 +222,7 @@ def test_subject_learning_area(seed):
 def test_subject_grade_level_filters_by_room(seed):
     a = Api("admin")
     m1 = a.post("/api/admin/subjects", json={"subject_code": "ศ21101", "name": "ศิลปะ 1"}).json()
-    assert m1["grade_level"] == "ม.1"  # guessed from a standard code
+    assert m1["grade_level"] is None  # never guessed from the code
     music = a.post("/api/admin/subjects", json={"subject_code": "ศ0201", "name": "ดนตรีศึกษา", "grade_level": "ม.2"}).json()
     assert music["grade_level"] == "ม.2" and music["learning_area"] == "ศิลปะ"
     anyg = a.post("/api/admin/subjects", json={"subject_code": "X9", "name": "แนะแนว", "grade_level": ""}).json()
@@ -230,6 +230,7 @@ def test_subject_grade_level_filters_by_room(seed):
     opt = a.get("/api/attendance/options").json()
     grades = {s["code"]: s["grade"] for s in opt["subjects"]}
     assert grades["ศ0201"] == "ม.2" and grades["X9"] is None
+    assert grades["ศ21101"] is None
     assert {c["grade"] for c in opt["classrooms"]} == {"ม.1"}
 
 

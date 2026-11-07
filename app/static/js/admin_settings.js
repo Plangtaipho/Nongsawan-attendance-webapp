@@ -16,7 +16,7 @@ const TABS = {
     fields: (u) => [
       { key: "full_name", label: "ชื่อ - สกุล", required: true, max: 150 },
       u ? null : { key: "username", label: "ชื่อผู้ใช้ (ภาษาอังกฤษ/ตัวเลข)", required: true, max: 50 },
-      { key: "email", label: "อีเมล (ถ้ามี)", type: "email", max: 255 },
+      { key: "email", label: "อีเมล Google (ใช้เข้าสู่ระบบด้วย Google)", type: "email", max: 255 },
       { key: "role", label: "สิทธิ์", type: "select", options: [["teacher", "ครู"], ["admin", "ผู้ดูแลระบบ"]] },
       u ? { key: "is_active", label: "สถานะ", type: "select", options: [["true", "ใช้งาน"], ["false", "ปิดบัญชี"]] } : null,
       u ? { key: "new_password", label: "ตั้งรหัสผ่านใหม่ (เว้นว่างถ้าไม่เปลี่ยน)", type: "password" }

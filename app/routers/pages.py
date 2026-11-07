@@ -91,7 +91,20 @@ router.add_api_route("/admin/settings", page("admin/settings.html", True, "setti
 def login_page(request: Request, user: User | None = Depends(get_optional_user)):
     if user is not None:
         return RedirectResponse("/", status_code=303)
-    return render(request, "login.html", None)
+    s = get_settings()
+    return render(request, "login.html", None, google_enabled=s.google_enabled,
+                  login_error=LOGIN_ERRORS.get(request.query_params.get("error", ""), ""))
+
+
+LOGIN_ERRORS = {
+    "google_off": "ยังไม่ได้เปิดใช้การเข้าสู่ระบบด้วย Google",
+    "google_state": "หมดเวลาหรือคำขอไม่ถูกต้อง กรุณากดเข้าสู่ระบบด้วย Google อีกครั้ง",
+    "google_cancel": "ยกเลิกการเข้าสู่ระบบด้วย Google แล้ว",
+    "google_failed": "เข้าสู่ระบบด้วย Google ไม่สำเร็จ กรุณาลองใหม่",
+    "google_unverified": "บัญชี Google นี้ยังไม่ได้ยืนยันอีเมล",
+    "google_domain": "กรุณาใช้บัญชี Google ของโรงเรียน",
+    "google_no_user": "บัญชี Google นี้ยังไม่ได้ลงทะเบียนในระบบ กรุณาแจ้งผู้ดูแลระบบให้ใส่อีเมลนี้ในบัญชีของคุณ",
+}
 
 
 # Report columns per printed page; longer terms continue on the next sheet.

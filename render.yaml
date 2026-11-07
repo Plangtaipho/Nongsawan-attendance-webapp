@@ -26,6 +26,13 @@ services:
         value: /etc/ssl/certs/ca-certificates.crt
       - key: SCHOOL_NAME
         sync: false
+      # Sign in with Google (optional): from Google Cloud Console > APIs & Services > Credentials.
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_ALLOWED_DOMAIN
+        sync: false
       - key: INITIAL_ADMIN_USERNAME
         sync: false
       - key: INITIAL_ADMIN_PASSWORD

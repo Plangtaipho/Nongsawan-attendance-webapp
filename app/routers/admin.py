@@ -78,7 +78,7 @@ def create_user(body: UserCreate, admin: User = Depends(require_admin), db: Sess
     u = User(
         username=body.username,
         full_name=body.full_name,
-        email=body.email or None,
+        email=(body.email or "").strip().lower() or None,
         role=body.role,
         password_hash=hash_password(body.password),
     )
@@ -97,7 +97,7 @@ def update_user(user_id: int, body: UserUpdate, admin: User = Depends(require_ad
     changes = body.model_dump(exclude_unset=True)
     new_password = changes.pop("new_password", None)
     if "email" in changes:
-        changes["email"] = changes["email"] or None
+        changes["email"] = (changes["email"] or "").strip().lower() or None
     for k, v in changes.items():
         setattr(u, k, v)
     if new_password:

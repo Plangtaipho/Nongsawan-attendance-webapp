@@ -14,7 +14,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.config import get_settings, parse_periods
 from app.database import SessionLocal
 from app.models import Period, Role, User
-from app.routers import admin, attendance, auth, pages, reports
+from app.routers import admin, attendance, auth, google_auth, pages, reports
 from app.security import hash_password
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
@@ -133,6 +133,7 @@ def healthz():
 
 app.mount("/static", StaticFiles(directory=str(Path(__file__).resolve().parent / "static")), name="static")
 app.include_router(auth.router)
+app.include_router(google_auth.router)
 app.include_router(admin.router)
 app.include_router(attendance.router)
 app.include_router(reports.router)

@@ -87,6 +87,24 @@ Push repository นี้ขึ้น GitHub (ไฟล์ `.env` ถูก igno
 4. ไปที่ "จัดการนักเรียน": ดาวน์โหลดไฟล์ตัวอย่าง กรอกรายชื่อ แล้วนำเข้า
 5. ทดลองเช็คชื่อ 1 คาบบนมือถือ ดูสรุปรายวัน และพิมพ์รายงาน PDF
 
+### 5. เข้าสู่ระบบด้วย Google (ไม่บังคับ)
+ปุ่ม "เข้าสู่ระบบด้วย Google" จะแสดงเมื่อใส่ `GOOGLE_CLIENT_ID` และ `GOOGLE_CLIENT_SECRET` ใน Render แล้วเท่านั้น
+ระบบ**ไม่สร้างบัญชีให้อัตโนมัติ** ครูจะเข้าได้ก็ต่อเมื่อ Admin ใส่อีเมล Google ของครูคนนั้นไว้ในบัญชีผู้ใช้ และบัญชียังเปิดใช้งานอยู่
+การเข้าด้วยชื่อผู้ใช้และรหัสผ่านยังใช้ได้เหมือนเดิม
+
+1. เข้า https://console.cloud.google.com สร้าง Project ใหม่ (เช่น "ระบบบันทึกการสอน")
+2. เมนู **Google Auth Platform** (หรือ APIs & Services → OAuth consent screen) → Get started
+   - App name: ระบบบันทึกการสอน, User support email: อีเมลผู้ดูแล
+   - Audience: **External** (ถ้าโรงเรียนใช้ Google Workspace และครูทุกคนใช้อีเมลโรงเรียน เลือก Internal ได้)
+3. เมนู **Clients** → Create client → Application type: **Web application**
+   - Authorized redirect URIs: `https://<ชื่อ service>.onrender.com/auth/google/callback`
+4. คัดลอก Client ID และ Client secret ไปใส่ใน Render → Environment เป็น `GOOGLE_CLIENT_ID` และ `GOOGLE_CLIENT_SECRET` แล้ว Save
+   (ห้ามใส่ค่าเหล่านี้ในโค้ดหรือส่งในแชท)
+5. ถ้าเลือก External: เมนู **Audience** → กด **Publish app** (ถ้าไม่กด จะเข้าได้เฉพาะ Test users ที่เพิ่มไว้)
+   ระบบขอแค่ชื่อและอีเมล จึงไม่ต้องรอ Google ตรวจสอบแอป
+6. ในระบบ: ตั้งค่า → ผู้ใช้ → แก้ไขครูแต่ละคน ใส่ "อีเมล Google"
+7. ถ้าต้องการให้เข้าได้เฉพาะอีเมลโรงเรียน ใส่ `GOOGLE_ALLOWED_DOMAIN` เช่น `school.ac.th`
+
 ### ข้อจำกัดของแผนฟรี (ตรวจสอบเมื่อ พ.ย. 2569)
 - **Render Free:** หยุดทำงานเมื่อไม่มีคนใช้ 15 นาที คนแรกที่เข้าต้องรอประมาณ 1 นาที, ได้ 750 ชั่วโมง/เดือน, ไม่มี Shell
   ([render.com/docs/free](https://render.com/docs/free)) สำหรับใช้งานจริงทั้งโรงเรียนแนะนำอัปเกรดเป็นแผนเสียเงิน

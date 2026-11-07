@@ -6,6 +6,10 @@ function safeNext() {
   return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
 }
 
+// Carry ?next= through the Google sign-in so teachers land where they were going.
+const googleLink = document.getElementById("google-login");
+if (googleLink) googleLink.href = "/auth/google/start?next=" + encodeURIComponent(safeNext());
+
 document.getElementById("login-form").addEventListener("submit", async (e) => {
   e.preventDefault();
   const errBox = document.getElementById("login-error");

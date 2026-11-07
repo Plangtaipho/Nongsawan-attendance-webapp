@@ -235,3 +235,10 @@ label.check input { width: 22px; height: 22px; min-height: 0; accent-color: var(
 .mb-0 { margin-bottom: 0; }
 .right { text-align: right; }
 .row-between { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+/* Sign in with Google */
+.btn-google { background: #fff; color: #1f1f1f; border: 1px solid #dadce0; box-shadow: 0 1px 2px rgba(0,0,0,.08); gap: .6rem; }
+.btn-google:hover { background: #f8f9fa; }
+.g-logo { width: 20px; height: 20px; flex: none; }
+.or-line { display: flex; align-items: center; gap: .75rem; margin: 1rem 0; color: var(--c-muted, #6b7280); font-size: .85rem; }
+.or-line::before, .or-line::after { content: ""; flex: 1; border-top: 1px solid var(--c-border, #e5e7eb); }

@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session, aliased
 from app.database import get_db
 from app.deps import require_admin, verify_csrf
 from app.models import (
+    AttendanceRecord,
     AttendanceSession,
     Classroom,
     Enrollment,
@@ -38,6 +39,16 @@ from app.services import audit, student_import
 from app.services.school import current_academic_year
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin), Depends(verify_csrf)])
+
+
+def _in_use(db: Session, column, value) -> bool:
+    return bool(db.scalar(select(func.count()).where(column == value)))
+
+
+def _delete(db: Session, admin: User, obj, entity: str) -> None:
+    audit.log(db, admin, "delete", entity, obj.id)
+    db.delete(obj)
+    db.commit()
 
 
 def _commit(db: Session, conflict_msg: str) -> None:
@@ -127,6 +138,14 @@ def update_term(term_id: int, body: TermIn, db: Session = Depends(get_db)):
     return _save_term(db, _get(db, Term, term_id, "เทอม"), body)
 
 
+@router.delete("/terms/{term_id}", status_code=204)
+def delete_term(term_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    t = _get(db, Term, term_id, "เทอม")
+    if _in_use(db, AttendanceSession.term_id, t.id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "เทอมนี้มีการเช็คชื่อแล้ว ลบไม่ได้")
+    _delete(db, admin, t, "term")
+
+
 # ---------------- Classrooms ----------------
 @router.get("/classrooms", response_model=list[ClassroomOut])
 def list_classrooms(academic_year: int | None = None, db: Session = Depends(get_db)):
@@ -153,6 +172,14 @@ def update_classroom(classroom_id: int, body: ClassroomIn, db: Session = Depends
     return c
 
 
+@router.delete("/classrooms/{classroom_id}", status_code=204)
+def delete_classroom(classroom_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    c = _get(db, Classroom, classroom_id, "ห้องเรียน")
+    if _in_use(db, AttendanceSession.classroom_id, c.id) or _in_use(db, Enrollment.classroom_id, c.id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "ห้องนี้มีนักเรียนหรือการเช็คชื่อแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
+    _delete(db, admin, c, "classroom")
+
+
 # ---------------- Subjects ----------------
 @router.get("/subjects", response_model=list[SubjectOut])
 def list_subjects(db: Session = Depends(get_db)):
@@ -174,6 +201,14 @@ def update_subject(subject_id: int, body: SubjectIn, db: Session = Depends(get_d
         setattr(s, k, v)
     _commit(db, "รหัสวิชานี้มีอยู่แล้ว")
     return s
+
+
+@router.delete("/subjects/{subject_id}", status_code=204)
+def delete_subject(subject_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    s = _get(db, Subject, subject_id, "วิชา")
+    if _in_use(db, AttendanceSession.subject_id, s.id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "วิชานี้มีการเช็คชื่อแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
+    _delete(db, admin, s, "subject")
 
 
 # ---------------- Periods ----------------
@@ -283,6 +318,19 @@ def create_student(body: StudentIn, admin: User = Depends(require_admin), db: Se
     db.commit()
     e = db.scalar(select(Enrollment).where(Enrollment.student_id == s.id, Enrollment.classroom_id == room.id))
     return _student_out(s, e, room)
+
+
+@router.delete("/students/{student_id}", status_code=204)
+def delete_student(student_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    """Only for a student added by mistake: one with attendance history must be set inactive instead."""
+    s = _get(db, Student, student_id, "นักเรียน")
+    if _in_use(db, AttendanceRecord.student_id, s.id):
+        raise HTTPException(status.HTTP_409_CONFLICT, "นักเรียนคนนี้มีประวัติการเช็คชื่อแล้ว ลบไม่ได้ (เปลี่ยนสถานะแทนได้)")
+    for e in db.scalars(select(Enrollment).where(Enrollment.student_id == s.id)):
+        db.delete(e)
+    audit.log(db, admin, "delete", "student", s.id, {"student_code": s.student_code})
+    db.delete(s)
+    db.commit()
 
 
 @router.patch("/students/{student_id}", response_model=StudentOut)

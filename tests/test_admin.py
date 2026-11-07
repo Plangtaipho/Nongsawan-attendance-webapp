@@ -2,7 +2,7 @@ from io import BytesIO
 
 from openpyxl import Workbook
 
-from tests.conftest import PASSWORD, Api
+from tests.conftest import PASSWORD, Api, session_body
 
 
 def xlsx(rows, headers=("เลขประจำตัว", "คำนำหน้า", "ชื่อ", "นามสกุล", "ชั้น", "ห้อง", "เลขที่"), title_row=False) -> bytes:
@@ -134,3 +134,29 @@ def test_period_delete_blocked_when_used(seed):
     a = Api("admin")
     assert a.delete(f"/api/admin/periods/{seed['p1']}").status_code == 409
     assert a.delete(f"/api/admin/periods/{seed['p2']}").status_code == 204
+
+
+def test_delete_only_when_unused(seed):
+    a = Api("admin")
+    # Nothing recorded yet: an unused subject, the outsider student and the emptied room can go.
+    extra = a.post("/api/admin/subjects", json={"subject_code": "TEST", "name": "ทดสอบ"}).json()
+    assert a.delete(f"/api/admin/subjects/{extra['id']}").status_code == 204
+    assert a.delete(f"/api/admin/classrooms/{seed['other_room_id']}").status_code == 409  # still has a student
+    assert a.delete(f"/api/admin/students/{seed['outsider']}").status_code == 204
+    assert a.delete(f"/api/admin/classrooms/{seed['other_room_id']}").status_code == 204
+    # After a check, the term, room, subject and students in it are protected.
+    assert a.post("/api/attendance/sessions", json=session_body(seed)).status_code in (200, 201)
+    assert a.delete(f"/api/admin/terms/{seed['term_id']}").status_code == 409
+    assert a.delete(f"/api/admin/classrooms/{seed['room_id']}").status_code == 409
+    assert a.delete(f"/api/admin/subjects/{seed['subject_id']}").status_code == 409
+    assert a.delete(f"/api/admin/students/{seed['students'][0]}").status_code == 409
+    # Teachers cannot delete anything.
+    assert Api("teacher1").delete(f"/api/admin/subjects/{seed['subject_id']}").status_code == 403
+
+
+def test_student_list_filters(seed):
+    a = Api("admin")
+    assert len(a.get("/api/admin/students").json()) == 4
+    assert len(a.get(f"/api/admin/students?classroom_id={seed['room_id']}").json()) == 3
+    found = a.get("/api/admin/students?q=นอก").json()
+    assert [s["classroom_name"] for s in found] == ["ม.1/2"]

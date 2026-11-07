@@ -28,6 +28,10 @@
 
   <div class="card mt-2">
     <div class="field">
+      <label class="check"><input id="f-sub" type="checkbox"> สอนแทน (คาบนี้ไม่ใช่คาบของฉัน)</label>
+      <select id="f-sub-teacher" class="hidden mt-1" aria-label="สอนแทนครู"></select>
+    </div>
+    <div class="field">
       <label for="f-topic">หัวข้อที่สอนวันนี้</label>
       <input id="f-topic" maxlength="500" placeholder="เช่น สมการเชิงเส้นตัวแปรเดียว">
     </div>
@@ -42,4 +46,4 @@
   <button id="save-btn" class="btn" type="button">บันทึกการเช็คชื่อ</button>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/attendance.js?v=6"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/attendance.js?v=7"></script>{% endblock %}

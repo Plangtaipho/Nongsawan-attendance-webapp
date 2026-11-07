@@ -3,7 +3,7 @@
 const $ = (id) => document.getElementById(id);
 const els = {
   date: $("f-date"), room: $("f-room"), period: $("f-period"), area: $("f-area"), subject: $("f-subject"),
-  topic: $("f-topic"), activity: $("f-activity"), list: $("students"), summary: $("summary"),
+  sub: $("f-sub"), subTeacher: $("f-sub-teacher"), topic: $("f-topic"), activity: $("f-activity"), list: $("students"), summary: $("summary"),
   sheet: $("sheet"), prompt: $("prompt"), loading: $("loading"), savebar: $("savebar"),
   save: $("save-btn"), savedInfo: $("saved-info"), noStudents: $("no-students"), warn: $("setup-warning"),
 };
@@ -44,6 +44,16 @@ function setSubject(id) {
   els.subject.value = String(s.id);
 }
 
+// Show the saved substitute (สอนแทน) state; the absent teacher may not be in the list (e.g. viewing as someone else).
+function setSubstitute(id, name) {
+  els.sub.checked = !!id;
+  els.subTeacher.classList.toggle("hidden", !id);
+  if (id && ![...els.subTeacher.options].some((o) => o.value === String(id))) {
+    els.subTeacher.append(h("option", { value: String(id) }, name || "ครูท่านอื่น"));
+  }
+  els.subTeacher.value = id ? String(id) : "";
+}
+
 async function init() {
   let opt;
   try {
@@ -55,6 +65,7 @@ async function init() {
   fillSelect(els.room, opt.classrooms, { placeholder: "เลือกห้อง" });
   fillSelect(els.period, opt.periods, { label: (p) => `คาบ ${p.no} (${p.start}-${p.end})`, placeholder: "เลือกคาบ" });
   allSubjects = opt.subjects;
+  fillSelect(els.subTeacher, opt.teachers, { placeholder: "เลือกครูที่ไม่อยู่ (สอนแทนครู...)" });
   fillSelect(els.area, opt.learning_areas.map((a) => ({ id: a, name: a })), { placeholder: "เลือกกลุ่มสาระ" });
   fillSubjects();
 
@@ -140,7 +151,8 @@ async function load() {
     readOnly = !!(s && !s.can_edit);
     els.topic.value = s?.topic || "";
     els.activity.value = s?.activity || "";
-    els.topic.disabled = els.activity.disabled = readOnly;
+    els.topic.disabled = els.activity.disabled = els.sub.disabled = els.subTeacher.disabled = readOnly;
+    setSubstitute(s?.substitute_for_id, s?.substitute_for_name);
     if (s) {
       setSubject(String(s.subject_id));
       els.savedInfo.textContent = `คาบนี้บันทึกแล้วโดย ${s.teacher_name} (${s.subject_name})` +
@@ -164,11 +176,13 @@ async function load() {
 
 async function save() {
   if (!els.subject.value) { toast("กรุณาเลือกวิชา", "error"); els.subject.focus(); return; }
+  if (els.sub.checked && !els.subTeacher.value) { toast("กรุณาเลือกครูที่สอนแทน", "error"); els.subTeacher.focus(); return; }
   const body = {
     classroom_id: Number(els.room.value),
     period_id: Number(els.period.value),
     subject_id: Number(els.subject.value),
     session_date: els.date.value,
+    substitute_for_id: els.sub.checked && els.subTeacher.value ? Number(els.subTeacher.value) : null,
     topic: els.topic.value.trim() || null,
     activity: els.activity.value.trim() || null,
     records: students.map((s) => ({ student_id: s.id, status: s.status, note: (s.note || "").trim() || null })),
@@ -203,6 +217,8 @@ for (const el of [els.date, els.room, els.period]) {
 els.subject.addEventListener("change", () => { dirty = true; });
 els.area.addEventListener("change", () => { fillSubjects(); els.subject.value = ""; dirty = true; });
 els.topic.addEventListener("input", () => { dirty = true; });
+els.sub.addEventListener("change", () => { els.subTeacher.classList.toggle("hidden", !els.sub.checked); dirty = true; });
+els.subTeacher.addEventListener("change", () => { dirty = true; });
 els.activity.addEventListener("input", () => { dirty = true; });
 els.save.addEventListener("click", save);
 $("all-present").addEventListener("click", () => {

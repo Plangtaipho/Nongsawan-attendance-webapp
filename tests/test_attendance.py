@@ -100,3 +100,23 @@ def test_only_present_leave_absent_allowed(seed):
     for old in ("late", "sick_leave"):
         r = a.post("/api/attendance/sessions", json=session_body(seed, statuses=("present", old, "absent")))
         assert r.status_code == 422, old
+
+
+def test_substitute_teacher(seed):
+    t2 = Api("teacher2")
+    teacher1_id = seed["t1"]
+    opts = t2.get("/api/attendance/options").json()
+    assert teacher1_id in [t["id"] for t in opts["teachers"]]
+    r = t2.post("/api/attendance/sessions", json=session_body(seed, substitute_for_id=teacher1_id))
+    assert r.status_code == 200, r.text
+    data = t2.get("/api/attendance/session", params={"classroom_id": seed["room_id"], "period_id": seed["p1"], "session_date": seed["today"].isoformat()}).json()
+    assert data["session"]["substitute_for_id"] == teacher1_id
+    assert data["session"]["substitute_for_name"] == "ครูหนึ่ง"
+    hist = t2.get("/api/attendance/sessions").json()
+    assert hist[0]["substitute_for"] == "ครูหนึ่ง"
+    rep = t2.get("/api/reports/term", params={"term_id": seed["term_id"], "classroom_id": seed["room_id"], "subject_id": seed["subject_id"]}).json()
+    assert rep["sessions"][0]["substitute_for"] == "ครูหนึ่ง"
+    # Unticking clears it; unknown teacher is refused.
+    t2.post("/api/attendance/sessions", json=session_body(seed))
+    assert t2.get("/api/attendance/sessions").json()[0]["substitute_for"] is None
+    assert t2.post("/api/attendance/sessions", json=session_body(seed, substitute_for_id=99999)).status_code == 404

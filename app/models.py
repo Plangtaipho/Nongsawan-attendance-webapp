@@ -196,6 +196,8 @@ class AttendanceSession(TimestampMixin, Base):
     subject_id: Mapped[int] = mapped_column(ForeignKey("subjects.id"), nullable=False)
     period_id: Mapped[int] = mapped_column(ForeignKey("periods.id"), nullable=False)
     teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
+    # Set when teacher_id taught this period in place of another teacher (สอนแทน).
+    substitute_for_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     session_date: Mapped[date] = mapped_column(Date, nullable=False)
     topic: Mapped[str | None] = mapped_column(String(500), nullable=True)
     activity: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -204,7 +206,8 @@ class AttendanceSession(TimestampMixin, Base):
     classroom: Mapped[Classroom] = relationship()
     subject: Mapped[Subject] = relationship()
     period: Mapped[Period] = relationship()
-    teacher: Mapped[User] = relationship()
+    teacher: Mapped[User] = relationship(foreign_keys=[teacher_id])
+    substitute_for: Mapped[User | None] = relationship(foreign_keys=[substitute_for_id])
     records: Mapped[list["AttendanceRecord"]] = relationship(
         back_populates="session", cascade="all, delete-orphan", passive_deletes=True
     )

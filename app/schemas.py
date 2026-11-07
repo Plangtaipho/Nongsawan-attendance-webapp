@@ -212,6 +212,7 @@ class SessionIn(In):
     session_date: date
     topic: str | None = Field(default=None, max_length=500)
     activity: str | None = Field(default=None, max_length=5000)
+    substitute_for_id: int | None = None  # the absent teacher, when this period is สอนแทน
     records: list[RecordIn] = Field(min_length=1, max_length=200)
 
     @field_validator("records")

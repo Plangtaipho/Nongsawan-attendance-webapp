@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
-  <link rel="stylesheet" href="/static/css/print.css?v=6">
+  <link rel="stylesheet" href="/static/css/print.css?v=7">
 </head>
 <body>
   <div class="toolbar no-print">
@@ -73,7 +73,7 @@
       <thead><tr><th class="c-i">ที่</th><th class="c-date">วันที่</th><th class="c-p">คาบ</th><th>หัวข้อที่สอน</th><th>กิจกรรม / หมายเหตุ</th><th class="c-t">ผู้สอน</th></tr></thead>
       <tbody>
         {% for s in sessions %}
-        <tr><td class="c-i">{{ loop.index }}</td><td class="c-date">{{ s.date|thai_date }}</td><td class="c-p">{{ s.period_no }}</td><td>{{ s.topic or '-' }}</td><td>{{ s.activity or '' }}</td><td class="c-t">{{ s.teacher }}</td></tr>
+        <tr><td class="c-i">{{ loop.index }}</td><td class="c-date">{{ s.date|thai_date }}</td><td class="c-p">{{ s.period_no }}</td><td>{{ s.topic or '-' }}</td><td>{{ s.activity or '' }}</td><td class="c-t">{{ s.teacher }}{% if s.substitute_for %}<br><small>(สอนแทน {{ s.substitute_for }})</small>{% endif %}</td></tr>
         {% else %}
         <tr><td colspan="6" class="empty">ยังไม่มีการเช็คชื่อในเทอมนี้</td></tr>
         {% endfor %}
@@ -85,6 +85,6 @@
     </div>
     <p class="printed">พิมพ์เมื่อ {{ printed_on }} โดย {{ user.full_name }}</p>
   </section>
-  <script src="/static/js/print.js?v=6"></script>
+  <script src="/static/js/print.js?v=7"></script>
 </body>
 </html>

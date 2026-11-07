@@ -19,9 +19,10 @@ function row(s) {
     h("td", { class: "nowrap" }, thaiDate(s.date)),
     h("td", {}, s.period_no),
     h("td", { class: "nowrap" }, s.classroom),
-    h("td", {}, h("div", {}, s.subject), s.topic ? h("div", { class: "muted small" }, s.topic) : null),
+    h("td", {}, h("div", {}, s.subject), s.topic ? h("div", { class: "muted small" }, s.topic) : null,
+      s.substitute_for && !scopeEl ? h("span", { class: "badge" }, `สอนแทน ${s.substitute_for}`) : null),
     h("td", { class: "small" }, countsText(s.counts)),
-    scopeEl ? h("td", { class: "small" }, s.teacher) : null,
+    scopeEl ? h("td", { class: "small" }, s.teacher, s.substitute_for ? h("div", { class: "muted" }, `สอนแทน ${s.substitute_for}`) : null) : null,
     h("td", {}, h("a", { href: "/?" + q, class: "btn btn-secondary btn-sm" }, "เปิด")),
   );
 }

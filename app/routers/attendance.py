@@ -50,6 +50,10 @@ def options(db: Session = Depends(get_db), user: User = Depends(get_current_user
         "learning_areas": [a for a in LEARNING_AREAS if any(s.learning_area == a for s in subjects)]
         + (["อื่นๆ"] if any(not s.learning_area for s in subjects) else []),
         "subjects": [{"id": s.id, "code": s.subject_code, "name": s.name, "area": s.learning_area or "อื่นๆ"} for s in subjects],
+        "teachers": [
+            {"id": t.id, "name": t.full_name}
+            for t in db.scalars(select(User).where(User.is_active.is_(True), User.id != user.id).order_by(User.full_name))
+        ],
         "periods": [
             {"id": p.id, "no": p.period_no, "start": p.start_time.strftime("%H:%M"), "end": p.end_time.strftime("%H:%M")}
             for p in periods
@@ -71,7 +75,12 @@ def get_session(
         raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบห้องเรียน")
     s = db.scalar(
         select(AttendanceSession)
-        .options(selectinload(AttendanceSession.records), selectinload(AttendanceSession.teacher), selectinload(AttendanceSession.subject))
+        .options(
+            selectinload(AttendanceSession.records),
+            selectinload(AttendanceSession.teacher),
+            selectinload(AttendanceSession.substitute_for),
+            selectinload(AttendanceSession.subject),
+        )
         .where(
             AttendanceSession.classroom_id == classroom_id,
             AttendanceSession.period_id == period_id,
@@ -101,6 +110,8 @@ def get_session(
                 "topic": s.topic,
                 "activity": s.activity,
                 "teacher_name": s.teacher.full_name,
+                "substitute_for_id": s.substitute_for_id,
+                "substitute_for_name": s.substitute_for.full_name if s.substitute_for else None,
                 "updated_at": s.updated_at.isoformat(),
                 "can_edit": can_edit(user, s),
             }
@@ -118,6 +129,10 @@ def save_session(body: SessionIn, db: Session = Depends(get_db), user: User = De
     term = term_for_date(db, body.session_date)
     if term is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "วันที่นี้ไม่อยู่ในช่วงเทอมใด กรุณาให้ผู้ดูแลระบบตั้งค่าเทอม")
+    if body.substitute_for_id is not None:
+        absent = db.get(User, body.substitute_for_id)
+        if absent is None:
+            raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบครูที่สอนแทน")
     for model, obj_id, label in ((Classroom, body.classroom_id, "ห้องเรียน"), (Subject, body.subject_id, "วิชา"), (Period, body.period_id, "คาบเรียน")):
         if db.get(model, obj_id) is None:
             raise HTTPException(status.HTTP_404_NOT_FOUND, f"ไม่พบ{label}")
@@ -151,6 +166,8 @@ def save_session(body: SessionIn, db: Session = Depends(get_db), user: User = De
     before = {r.student_id: r.status.value for r in s.records} if not created else {}
     s.term_id, s.subject_id = term.id, body.subject_id
     s.topic, s.activity = body.topic or None, body.activity or None
+    # The recorder cannot be their own substitute.
+    s.substitute_for_id = body.substitute_for_id if body.substitute_for_id != s.teacher_id else None
 
     existing = {r.student_id: r for r in s.records}
     for r in body.records:
@@ -192,6 +209,7 @@ def list_sessions(
         selectinload(AttendanceSession.subject),
         selectinload(AttendanceSession.period),
         selectinload(AttendanceSession.teacher),
+        selectinload(AttendanceSession.substitute_for),
     )
     if mine or user.role != Role.admin:
         stmt = stmt.where(AttendanceSession.teacher_id == user.id)
@@ -223,6 +241,7 @@ def list_sessions(
             "subject": s.subject.name,
             "topic": s.topic,
             "teacher": s.teacher.full_name,
+            "substitute_for": s.substitute_for.full_name if s.substitute_for else None,
             "counts": counts[s.id],
         }
         for s in sessions

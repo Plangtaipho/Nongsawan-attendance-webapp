@@ -221,6 +221,9 @@ body:has(.login-wrap) main { padding: 0; max-width: none; }
 
 /* ===== Utilities (no inline styles: the CSP blocks them) ===== */
 .center { text-align: center; }
+.mt-1 { margin-top: 8px; }
+label.check { display: flex; align-items: center; gap: 10px; font-size: 1rem; color: var(--c-text); cursor: pointer; min-height: 44px; }
+label.check input { width: 22px; height: 22px; min-height: 0; accent-color: var(--c-primary); }
 .small { font-size: .85rem; }
 .mt-2 { margin-top: 16px; }
 .mb-0 { margin-bottom: 0; }

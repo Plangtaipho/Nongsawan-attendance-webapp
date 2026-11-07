@@ -97,7 +97,12 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
 def term_report(db: Session, term: Term, classroom: Classroom, subject: Subject) -> dict:
     sessions = db.scalars(
         select(AttendanceSession)
-        .options(selectinload(AttendanceSession.records), selectinload(AttendanceSession.period), selectinload(AttendanceSession.teacher))
+        .options(
+            selectinload(AttendanceSession.records),
+            selectinload(AttendanceSession.period),
+            selectinload(AttendanceSession.teacher),
+            selectinload(AttendanceSession.substitute_for),
+        )
         .where(
             AttendanceSession.term_id == term.id,
             AttendanceSession.classroom_id == classroom.id,
@@ -152,6 +157,7 @@ def term_report(db: Session, term: Term, classroom: Classroom, subject: Subject)
                 "topic": s.topic,
                 "activity": s.activity,
                 "teacher": s.teacher.full_name,
+                "substitute_for": s.substitute_for.full_name if s.substitute_for else None,
             }
             for s in sessions
         ],

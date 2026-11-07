@@ -11,7 +11,7 @@
 | Backend API (auth, admin, import, attendance, reports) | Implemented, Tested (pytest 38 ข้อผ่าน) |
 | Frontend 9 หน้า | Implemented, Tested (Playwright บนจอ Pixel 7 ผ่าน) |
 | รายงาน PDF | Implemented, Tested (A4 แนวนอน, ภาษาไทยถูกต้อง, ~41 คน/หน้า) |
-| Deploy Render + TiDB Cloud | Deployed 7 พ.ย. 2569 (school-attendance-burk.onrender.com): migration บน TiDB ผ่าน, /healthz และหน้า login ตอบ 200 ตาม Log ของ Render; ยังไม่ได้ทดสอบ flow เต็มบน Production |
+| Deploy Render + TiDB Cloud | Deployed + Tested 7 พ.ย. 2569: flow เต็มบน Production ผ่าน (e2e/production_smoke.cjs) และลบข้อมูลทดสอบแล้ว |
 
 ## สมมติฐานที่ใช้ (ยังรอผู้ใช้ยืนยัน)
 1. ครูเลือกห้อง/คาบ/วิชาเองอิสระ ยังไม่ผูกตารางสอน

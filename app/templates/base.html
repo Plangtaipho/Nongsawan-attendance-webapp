@@ -8,37 +8,54 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap">
-  <link rel="stylesheet" href="/static/css/app.css?v=3">
+  <link rel="stylesheet" href="/static/css/app.css?v=4">
   {% if logo_url %}<link rel="icon" href="{{ logo_url }}">{% endif %}
-  <meta name="theme-color" content="#581c87">
+  <meta name="theme-color" content="#6b21a8">
   {% block head %}{% endblock %}
 </head>
 <body>
 {% if user %}
   <header class="topbar">
-    <a href="/" class="brand">{% if logo_url %}<img src="{{ logo_url }}" alt="" class="logo">{% endif %}<span>{{ school_name }}</span></a>
-    <span class="who">{{ user.full_name }}</span>
-    <button id="menu-btn" class="menu-btn" type="button" aria-expanded="false" aria-controls="nav">เมนู</button>
+    <button id="menu-btn" class="menu-btn" type="button" aria-expanded="false" aria-controls="nav" aria-label="เปิดเมนู">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <a href="/" class="brand">{% if logo_url %}<img src="{{ logo_url }}" alt="" class="logo">{% endif %}<span class="brand-text"><span class="brand-name">{{ school_name }}</span><span class="brand-sub">ระบบบันทึกการสอน</span></span></a>
+    <a href="/account" class="who" title="บัญชีของฉัน">{{ user.full_name }}</a>
   </header>
-  <nav id="nav" class="nav" aria-label="เมนูหลัก">
-    <a href="/" class="{{ 'active' if active == 'attendance' }}">เช็คชื่อ</a>
-    <a href="/history" class="{{ 'active' if active == 'history' }}">ประวัติการเช็คชื่อ</a>
-    <a href="/dashboard" class="{{ 'active' if active == 'dashboard' }}">สรุปรายวัน</a>
-    <a href="/reports" class="{{ 'active' if active == 'reports' }}">รายงานรายเทอม</a>
+  <div id="nav-backdrop" class="nav-backdrop" hidden></div>
+  <nav id="nav" class="drawer" aria-label="เมนูหลัก">
+    <div class="drawer-head">
+      {% if logo_url %}<img src="{{ logo_url }}" alt="" class="drawer-logo">{% endif %}
+      <div>
+        <div class="drawer-name">{{ user.full_name }}</div>
+        <div class="drawer-role">{{ 'ผู้ดูแลระบบ' if is_admin else 'ครู' }}</div>
+      </div>
+      <button id="menu-close" class="drawer-close" type="button" aria-label="ปิดเมนู"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+    </div>
+    <div class="drawer-group">
+      <a href="/" class="{{ 'active' if active == 'attendance' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3 8-8"/><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"/></svg><span>เช็คชื่อ</span></a>
+      <a href="/history" class="{{ 'active' if active == 'history' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><span>ประวัติการเช็คชื่อ</span></a>
+      <a href="/dashboard" class="{{ 'active' if active == 'dashboard' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>สรุปรายวัน</span></a>
+      <a href="/reports" class="{{ 'active' if active == 'reports' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg><span>รายงานรายเทอม</span></a>
+    </div>
     {% if is_admin %}
-    <a href="/admin/students" class="{{ 'active' if active == 'students' }}">จัดการนักเรียน</a>
-    <a href="/admin/settings" class="{{ 'active' if active == 'settings' }}">ตั้งค่าระบบ</a>
+    <div class="drawer-label">ผู้ดูแลระบบ</div>
+    <div class="drawer-group">
+      <a href="/admin/students" class="{{ 'active' if active == 'students' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.5a6.5 6.5 0 0 1 3.5 5.5"/></svg><span>จัดการนักเรียน</span></a>
+      <a href="/admin/settings" class="{{ 'active' if active == 'settings' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg><span>ตั้งค่าระบบ</span></a>
+    </div>
     {% endif %}
-    <span class="spacer"></span>
-    <a href="/account" class="{{ 'active' if active == 'account' }}">บัญชีของฉัน</a>
-    <button id="logout-btn" type="button">ออกจากระบบ</button>
+    <div class="drawer-group drawer-bottom">
+      <a href="/account" class="{{ 'active' if active == 'account' }}"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><span>บัญชีของฉัน</span></a>
+      <button id="logout-btn" type="button"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/></svg><span>ออกจากระบบ</span></button>
+    </div>
   </nav>
 {% endif %}
   <main>
     {% block content %}{% endblock %}
   </main>
   <div id="toast" role="status" aria-live="polite"></div>
-  <script src="/static/js/api.js?v=3"></script>
+  <script src="/static/js/api.js?v=4"></script>
   {% block scripts %}{% endblock %}
 </body>
 </html>

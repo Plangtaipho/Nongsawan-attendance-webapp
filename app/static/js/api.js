@@ -101,10 +101,20 @@ async function withBusy(button, fn) {
 document.addEventListener("DOMContentLoaded", () => {
   const btn = document.getElementById("menu-btn");
   const nav = document.getElementById("nav");
-  if (btn && nav) btn.addEventListener("click", () => {
-    const open = nav.classList.toggle("open");
+  const backdrop = document.getElementById("nav-backdrop");
+  const setOpen = (open) => {
+    nav.classList.toggle("open", open);
+    backdrop.hidden = !open;
+    document.body.classList.toggle("no-scroll", open);
     btn.setAttribute("aria-expanded", String(open));
-  });
+    if (open) nav.querySelector("a, button").focus();
+  };
+  if (btn && nav && backdrop) {
+    btn.addEventListener("click", () => setOpen(!nav.classList.contains("open")));
+    backdrop.addEventListener("click", () => setOpen(false));
+    document.getElementById("menu-close").addEventListener("click", () => { setOpen(false); btn.focus(); });
+    document.addEventListener("keydown", (e) => { if (e.key === "Escape" && nav.classList.contains("open")) { setOpen(false); btn.focus(); } });
+  }
   const logout = document.getElementById("logout-btn");
   if (logout) logout.addEventListener("click", async () => {
     try { await api("/api/auth/logout", { method: "POST" }); } catch { /* go to login anyway */ }

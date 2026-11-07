@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 
 from app.database import get_db
 from app.deps import require_admin, verify_csrf
@@ -232,21 +232,29 @@ def list_students(
     db: Session = Depends(get_db),
 ):
     year = academic_year or current_academic_year(db)
-    room_ids = select(Classroom.id).where(Classroom.academic_year == year)
+    # This year's enrollments as a derived table. TiDB rejects a subquery inside a JOIN ... ON,
+    # so the year filter lives in the derived table instead of the ON clause.
+    year_enroll = (
+        select(Enrollment)
+        .join(Classroom, Classroom.id == Enrollment.classroom_id)
+        .where(Classroom.academic_year == year)
+        .subquery()
+    )
+    Enrollment_ = aliased(Enrollment, year_enroll)
     stmt = (
-        select(Student, Enrollment, Classroom)
+        select(Student, Enrollment_, Classroom)
         .select_from(Student)
-        .outerjoin(Enrollment, (Enrollment.student_id == Student.id) & Enrollment.classroom_id.in_(room_ids))
-        .outerjoin(Classroom, Classroom.id == Enrollment.classroom_id)
+        .outerjoin(Enrollment_, Enrollment_.student_id == Student.id)
+        .outerjoin(Classroom, Classroom.id == Enrollment_.classroom_id)
     )
     if classroom_id:
-        stmt = stmt.where(Enrollment.classroom_id == classroom_id)
+        stmt = stmt.where(Enrollment_.classroom_id == classroom_id)
     if q:
         like = f"%{q.strip()}%"
         stmt = stmt.where(or_(Student.student_code.like(like), Student.first_name.like(like), Student.last_name.like(like)))
     if not classroom_id and not q:
-        stmt = stmt.where(Enrollment.id.is_not(None))  # default view: this year's enrolled students
-    stmt = stmt.order_by(Classroom.grade_level, Classroom.room_no, Enrollment.class_number, Student.student_code).limit(1000)
+        stmt = stmt.where(Enrollment_.id.is_not(None))  # default view: this year's enrolled students
+    stmt = stmt.order_by(Classroom.grade_level, Classroom.room_no, Enrollment_.class_number, Student.student_code).limit(1000)
     return [_student_out(s, e, c) for s, e, c in db.execute(stmt).all()]
 
 

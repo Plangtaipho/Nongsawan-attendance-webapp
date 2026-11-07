@@ -16,7 +16,7 @@ async function load() {
     if (!dateEl.value) dateEl.value = d.date;
     const t = d.totals;
     document.getElementById("d-stats").replaceChildren(
-      stat(d.session_count, "คาบที่เช็คแล้ว"),
+      stat(d.session_count, "คาบที่บันทึกแล้ว"),
       stat(d.attendance_rate === null ? "-" : d.attendance_rate + "%", "อัตราเข้าเรียน"),
       stat(t.present, "มา"),
       stat(t.leave, "ลา"),

@@ -8,7 +8,7 @@ const hhmm = (t) => (t || "").slice(0, 5);
 const TABS = {
   users: {
     title: "บัญชีครู",
-    hint: "ครูใช้ชื่อผู้ใช้และรหัสผ่านที่ตั้งที่นี่เพื่อเข้าสู่ระบบ ปิดบัญชีแทนการลบ เพื่อเก็บประวัติการเช็คชื่อ",
+    hint: "ครูใช้ชื่อผู้ใช้และรหัสผ่านที่ตั้งที่นี่เพื่อเข้าสู่ระบบ ปิดบัญชีแทนการลบ เพื่อเก็บประวัติการบันทึกการสอน",
     list: "/api/admin/users",
     url: (id) => (id ? `/api/admin/users/${id}` : "/api/admin/users"),
     updateMethod: "PATCH",
@@ -25,7 +25,7 @@ const TABS = {
   },
   terms: {
     title: "ภาคเรียน",
-    hint: "ตั้งช่วงวันที่ของแต่ละเทอม ระบบใช้วันที่เช็คชื่อเพื่อจัดเข้าเทอมอัตโนมัติ ต้องมีเทอมปัจจุบัน 1 เทอม",
+    hint: "ตั้งช่วงวันที่ของแต่ละเทอม ระบบใช้วันที่บันทึกการสอนเพื่อจัดเข้าเทอมอัตโนมัติ ต้องมีเทอมปัจจุบัน 1 เทอม",
     list: "/api/admin/terms",
     url: (id) => (id ? `/api/admin/terms/${id}` : "/api/admin/terms"),
     updateMethod: "PUT",
@@ -54,7 +54,7 @@ const TABS = {
   },
   subjects: {
     title: "รายวิชา",
-    hint: "วิชาที่ปิดจะไม่แสดงในหน้าเช็คชื่อ แต่ยังอยู่ในรายงานย้อนหลัง",
+    hint: "วิชาที่ปิดจะไม่แสดงในหน้าบันทึกการสอน แต่ยังอยู่ในรายงานย้อนหลัง",
     list: "/api/admin/subjects",
     url: (id) => (id ? `/api/admin/subjects/${id}` : "/api/admin/subjects"),
     updateMethod: "PUT",
@@ -68,7 +68,7 @@ const TABS = {
   },
   periods: {
     title: "คาบเรียน",
-    hint: "เวลาคาบใช้เลือกคาบปัจจุบันให้อัตโนมัติในหน้าเช็คชื่อ",
+    hint: "เวลาคาบใช้เลือกคาบปัจจุบันให้อัตโนมัติในหน้าบันทึกการสอน",
     list: "/api/admin/periods",
     url: (id) => (id ? `/api/admin/periods/${id}` : "/api/admin/periods"),
     updateMethod: "PUT",

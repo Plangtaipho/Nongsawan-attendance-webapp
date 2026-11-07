@@ -125,7 +125,7 @@ def get_session(
 def save_session(body: SessionIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     """Create the check for a classroom/date/period, or update it if it already exists."""
     if body.session_date > today():
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "ไม่สามารถเช็คชื่อล่วงหน้าได้")
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "ไม่สามารถบันทึกการสอนล่วงหน้าได้")
     term = term_for_date(db, body.session_date)
     if term is None:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "วันที่นี้ไม่อยู่ในช่วงเทอมใด กรุณาให้ผู้ดูแลระบบตั้งค่าเทอม")
@@ -161,7 +161,7 @@ def save_session(body: SessionIn, db: Session = Depends(get_db), user: User = De
         )
         db.add(s)
     elif not can_edit(user, s):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "คาบนี้ครูท่านอื่นเช็คชื่อไว้แล้ว แก้ไขได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "คาบนี้ครูท่านอื่นบันทึกไว้แล้ว แก้ไขได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ")
 
     before = {r.student_id: r.status.value for r in s.records} if not created else {}
     s.term_id, s.subject_id = term.id, body.subject_id
@@ -252,7 +252,7 @@ def list_sessions(
 def delete_session(session_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     s = db.scalar(select(AttendanceSession).options(selectinload(AttendanceSession.records)).where(AttendanceSession.id == session_id))
     if s is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบรายการเช็คชื่อ")
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบรายการบันทึกการสอน")
     audit.log(
         db, admin, "delete", "attendance_session", s.id,
         {

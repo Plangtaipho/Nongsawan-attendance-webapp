@@ -166,7 +166,7 @@ async function load() {
     renderList();
     els.sheet.classList.remove("hidden");
     els.savebar.classList.toggle("hidden", readOnly || students.length === 0);
-    els.save.textContent = s ? "บันทึกการแก้ไข" : "บันทึกการเช็คชื่อ";
+    els.save.textContent = s ? "บันทึกการแก้ไข" : "บันทึกการสอน";
   } catch (e) {
     if (seq === loadSeq) toast(e.message, "error");
   } finally {
@@ -201,7 +201,7 @@ async function save() {
 }
 
 function confirmDiscard() {
-  return !dirty || confirm("ยังไม่ได้บันทึกการเช็คชื่อ ต้องการเปลี่ยนโดยไม่บันทึกหรือไม่?");
+  return !dirty || confirm("ยังไม่ได้บันทึกการสอน ต้องการเปลี่ยนโดยไม่บันทึกหรือไม่?");
 }
 
 for (const el of [els.date, els.room, els.period]) {

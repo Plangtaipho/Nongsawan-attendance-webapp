@@ -31,7 +31,7 @@ document.getElementById("r-show").addEventListener("click", async (e) => {
   try {
     const r = await withBusy(e.currentTarget, () => api("/api/reports/term?" + q));
     document.getElementById("r-caption").textContent =
-      `${r.classroom.name} · ${r.subject.code} ${r.subject.name} · ภาคเรียนที่ ${r.term.term_no}/${r.term.academic_year} · เช็คชื่อแล้ว ${r.sessions.length} คาบ`;
+      `${r.classroom.name} · ${r.subject.code} ${r.subject.name} · ภาคเรียนที่ ${r.term.term_no}/${r.term.academic_year} · บันทึกแล้ว ${r.sessions.length} คาบ`;
     document.getElementById("r-body").replaceChildren(...r.students.map((s) => h("tr", {},
       h("td", {}, s.number ?? "-"),
       h("td", {}, s.name),

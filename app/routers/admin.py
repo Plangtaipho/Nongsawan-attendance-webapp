@@ -142,7 +142,7 @@ def update_term(term_id: int, body: TermIn, db: Session = Depends(get_db)):
 def delete_term(term_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     t = _get(db, Term, term_id, "เทอม")
     if _in_use(db, AttendanceSession.term_id, t.id):
-        raise HTTPException(status.HTTP_409_CONFLICT, "เทอมนี้มีการเช็คชื่อแล้ว ลบไม่ได้")
+        raise HTTPException(status.HTTP_409_CONFLICT, "เทอมนี้มีการบันทึกการสอนแล้ว ลบไม่ได้")
     _delete(db, admin, t, "term")
 
 
@@ -176,7 +176,7 @@ def update_classroom(classroom_id: int, body: ClassroomIn, db: Session = Depends
 def delete_classroom(classroom_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     c = _get(db, Classroom, classroom_id, "ห้องเรียน")
     if _in_use(db, AttendanceSession.classroom_id, c.id) or _in_use(db, Enrollment.classroom_id, c.id):
-        raise HTTPException(status.HTTP_409_CONFLICT, "ห้องนี้มีนักเรียนหรือการเช็คชื่อแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
+        raise HTTPException(status.HTTP_409_CONFLICT, "ห้องนี้มีนักเรียนหรือการบันทึกการสอนแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
     _delete(db, admin, c, "classroom")
 
 
@@ -207,7 +207,7 @@ def update_subject(subject_id: int, body: SubjectIn, db: Session = Depends(get_d
 def delete_subject(subject_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     s = _get(db, Subject, subject_id, "วิชา")
     if _in_use(db, AttendanceSession.subject_id, s.id):
-        raise HTTPException(status.HTTP_409_CONFLICT, "วิชานี้มีการเช็คชื่อแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
+        raise HTTPException(status.HTTP_409_CONFLICT, "วิชานี้มีการบันทึกการสอนแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
     _delete(db, admin, s, "subject")
 
 
@@ -238,7 +238,7 @@ def update_period(period_id: int, body: PeriodIn, db: Session = Depends(get_db))
 def delete_period(period_id: int, db: Session = Depends(get_db)):
     p = _get(db, Period, period_id, "คาบเรียน")
     if db.scalar(select(func.count()).select_from(AttendanceSession).where(AttendanceSession.period_id == p.id)):
-        raise HTTPException(status.HTTP_409_CONFLICT, "คาบนี้มีการเช็คชื่อแล้ว ลบไม่ได้")
+        raise HTTPException(status.HTTP_409_CONFLICT, "คาบนี้มีการบันทึกการสอนแล้ว ลบไม่ได้")
     db.delete(p)
     db.commit()
 
@@ -325,7 +325,7 @@ def delete_student(student_id: int, admin: User = Depends(require_admin), db: Se
     """Only for a student added by mistake: one with attendance history must be set inactive instead."""
     s = _get(db, Student, student_id, "นักเรียน")
     if _in_use(db, AttendanceRecord.student_id, s.id):
-        raise HTTPException(status.HTTP_409_CONFLICT, "นักเรียนคนนี้มีประวัติการเช็คชื่อแล้ว ลบไม่ได้ (เปลี่ยนสถานะแทนได้)")
+        raise HTTPException(status.HTTP_409_CONFLICT, "นักเรียนคนนี้มีประวัติการบันทึกการสอนแล้ว ลบไม่ได้ (เปลี่ยนสถานะแทนได้)")
     for e in db.scalars(select(Enrollment).where(Enrollment.student_id == s.id)):
         db.delete(e)
     audit.log(db, admin, "delete", "student", s.id, {"student_code": s.student_code})

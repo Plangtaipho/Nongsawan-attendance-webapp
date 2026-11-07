@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     # When the periods table is empty at startup, these periods are created: comma-separated
     # "N=HH:MM-HH:MM" (period number = start-end). Default for this school: 7 slots of which
     # slot 4 is lunch, so teaching periods are 1-3 in the morning and 5-7 in the afternoon.
-    default_periods: str = "1=08:40-09:30,2=09:30-10:20,3=10:20-11:10,5=12:30-13:20,6=13:20-14:10,7=14:10-15:00"
+    default_periods: str = "1=08:40-09:40,2=09:40-10:40,3=10:40-11:40,5=12:30-13:30,6=13:30-14:30,7=14:30-15:30"
 
     @property
     def is_production(self) -> bool:

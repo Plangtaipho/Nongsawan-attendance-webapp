@@ -40,8 +40,8 @@ h2 { font-size: 1.1rem; margin: calc(var(--space) * 3) 0 var(--space); }
 }
 .topbar .brand { font-weight: 600; flex: 1; min-width: 0; display: flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
 .topbar .brand span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.topbar .logo { width: 36px; height: 36px; object-fit: contain; border-radius: 50%; background: #fff; padding: 2px; flex: none; }
-.login-logo { display: block; width: 96px; height: 96px; object-fit: contain; margin: 0 auto 8px; }
+.topbar .logo { width: 40px; height: 40px; object-fit: contain; border-radius: 50%; background: #fff; padding: 3px; flex: none; }
+.login-logo { display: block; width: 120px; height: 120px; object-fit: contain; margin: 0 auto 8px; }
 .topbar .who { font-size: .85rem; opacity: .85; }
 .menu-btn { background: none; border: 1px solid rgba(255,255,255,.4); color: #fff; border-radius: 8px; min-height: 40px; padding: 0 12px; font: inherit; }
 .nav { display: none; flex-direction: column; background: var(--c-surface); border-bottom: 1px solid var(--c-border); }

@@ -1,12 +1,13 @@
 # Keeps the Render Free instance awake during school hours so teachers don't wait
 # for a cold start. Render sleeps after 15 idle minutes; this pings every 10.
-# Times are UTC: 00:00-09:50 UTC = 07:00-16:50 Thailand, Monday-Friday.
+# Times are UTC: 00:00-09:50 UTC = 07:00-16:50 Thailand, every day (about 310 of the
+# 750 free hours a month). Weekends too: a sleeping free instance once failed to wake.
 # GitHub may start scheduled runs a few minutes late; the next run catches up.
 name: Keep site awake
 
 on:
   schedule:
-    - cron: "*/10 0-9 * * 1-5"
+    - cron: "*/10 0-9 * * *"
   workflow_dispatch: {}
 
 permissions: {}

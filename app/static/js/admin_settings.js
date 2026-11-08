@@ -91,6 +91,8 @@ let defaultYear = new Date().getFullYear() + 543;
 async function load() {
   const cfg = TABS[tab];
   $("tab-hint").textContent = cfg.hint;
+  $("subj-import").classList.toggle("hidden", tab !== "subjects");
+  $("subj-errors").classList.add("hidden");
   $("t-head").replaceChildren(h("tr", {}, cfg.columns.map(([label]) => h("th", {}, label)), h("th", {})));
   $("t-body").replaceChildren();
   $("loading").classList.remove("hidden");
@@ -176,6 +178,33 @@ async function remove(row) {
 
 $("dlg-cancel").addEventListener("click", () => $("dlg").close());
 $("add-btn").addEventListener("click", () => openDialog());
+
+// ---------- Subject import from Excel ----------
+$("subj-file").addEventListener("change", async (e) => {
+  const file = e.target.files[0];
+  e.target.value = ""; // allow choosing the same file again after fixing it
+  if (!file) return;
+  if (!/\.xlsx$/i.test(file.name)) { toast("รองรับเฉพาะไฟล์ .xlsx", "error"); return; }
+  const fd = () => { const f = new FormData(); f.append("file", file); return f; };
+  const box = $("subj-errors");
+  box.classList.add("hidden");
+  try {
+    const p = await api("/api/admin/subjects/import/preview", { method: "POST", form: fd() });
+    if (p.error_count) {
+      const bad = p.rows.filter((r) => r.errors.length).slice(0, 10);
+      box.replaceChildren(h("strong", {}, `ไฟล์มีแถวที่ผิด ${p.error_count} แถว กรุณาแก้แล้วนำเข้าใหม่`),
+        h("ul", {}, bad.map((r) => h("li", {}, `${r.sheet ? r.sheet + " " : ""}แถว ${r.row_no} ${r.subject_code}: ${r.errors.join(", ")}`))));
+      box.classList.remove("hidden");
+      return;
+    }
+    if (!confirm(`พบ ${p.total} วิชา: เพิ่มใหม่ ${p.new_count} วิชา, อัปเดต ${p.update_count} วิชา\nยืนยันนำเข้า?`)) return;
+    const r = await api("/api/admin/subjects/import/commit", { method: "POST", form: fd() });
+    toast(`นำเข้าแล้ว: เพิ่มใหม่ ${r.created} วิชา, อัปเดต ${r.updated} วิชา`, "success");
+    load();
+  } catch (err) {
+    toast(err.message, "error");
+  }
+});
 for (const b of document.querySelectorAll("[data-tab]")) {
   b.addEventListener("click", () => {
     tab = b.dataset.tab;

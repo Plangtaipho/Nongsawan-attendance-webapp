@@ -38,7 +38,7 @@ from app.schemas import (
     UserUpdate,
 )
 from app.security import hash_password
-from app.services import audit, student_import
+from app.services import audit, student_import, subject_import
 from app.services.school import current_academic_year
 
 router = APIRouter(prefix="/api/admin", tags=["admin"], dependencies=[Depends(require_admin), Depends(verify_csrf)])
@@ -374,6 +374,37 @@ def update_student(student_id: int, body: StudentUpdate, admin: User = Depends(r
     year_rooms = select(Classroom.id).where(Classroom.academic_year == year)
     e = db.scalar(select(Enrollment).where(Enrollment.student_id == s.id, Enrollment.classroom_id.in_(year_rooms)))
     return _student_out(s, e, db.get(Classroom, e.classroom_id) if e else None)
+
+
+# ---------------- Subject import ----------------
+@router.get("/subjects/import/template")
+def subject_import_template():
+    return Response(
+        subject_import.template_bytes(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="subject_template.xlsx"'},
+    )
+
+
+@router.post("/subjects/import/preview")
+async def subject_import_preview(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    data = await _read_upload(file)
+    try:
+        return subject_import.preview(db, subject_import.parse_xlsx(data))
+    except student_import.ImportFileError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+
+
+@router.post("/subjects/import/commit")
+async def subject_import_commit(file: UploadFile = File(...), admin: User = Depends(require_admin), db: Session = Depends(get_db)):
+    data = await _read_upload(file)
+    try:
+        result = subject_import.commit(db, subject_import.parse_xlsx(data))
+    except student_import.ImportFileError as exc:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, str(exc))
+    audit.log(db, admin, "import", "subject", None, result)
+    db.commit()
+    return result
 
 
 # ---------------- Excel import ----------------

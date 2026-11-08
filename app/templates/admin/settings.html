@@ -13,6 +13,12 @@
   <p id="tab-hint" class="muted small mb-0"></p>
   <button id="add-btn" class="btn btn-sm" type="button">+ เพิ่ม</button>
 </div>
+<div id="subj-import" class="row-between mt-1 hidden">
+  <p class="muted small mb-0">เพิ่มหลายวิชาพร้อมกันจากไฟล์ Excel (คอลัมน์ รหัสวิชา, ชื่อวิชา, กลุ่มสาระ, ชั้น) · <a href="/api/admin/subjects/import/template">ดาวน์โหลดไฟล์ตัวอย่าง</a></p>
+  <label class="btn btn-secondary btn-sm" for="subj-file">นำเข้าจาก Excel</label>
+  <input id="subj-file" type="file" accept=".xlsx" class="hidden">
+</div>
+<div id="subj-errors" class="alert alert-error mt-1 hidden" role="alert"></div>
 <div id="loading" class="loading hidden">กำลังโหลด...</div>
 <div class="table-wrap mt-2">
   <table>
@@ -33,4 +39,4 @@
   </form>
 </dialog>
 {% endblock %}
-{% block scripts %}<script src="/static/js/admin_settings.js?v=14"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/admin_settings.js?v=15"></script>{% endblock %}

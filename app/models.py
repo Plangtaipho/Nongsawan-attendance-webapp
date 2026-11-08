@@ -60,6 +60,7 @@ LEARNING_AREAS = [
     "ศิลปะ",
     "การงานอาชีพ",
     "ภาษาต่างประเทศ",
+    "กิจกรรมพัฒนาผู้เรียน",  # not a learning area, but teachers record these periods too
 ]
 # Thai subject codes start with the learning area's letter (ค21101 = คณิตศาสตร์).
 _AREA_BY_CODE_LETTER = {

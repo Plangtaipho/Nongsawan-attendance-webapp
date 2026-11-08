@@ -1,4 +1,7 @@
 """Admin back office: teachers, terms, classrooms, subjects, periods, students, Excel import."""
+import re
+import secrets
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import func, or_, select, update
 from sqlalchemy.exc import IntegrityError
@@ -73,14 +76,26 @@ def list_users(db: Session = Depends(get_db)):
     return db.scalars(select(User).order_by(User.is_active.desc(), User.full_name)).all()
 
 
+def _username_from_email(db: Session, email: str) -> str:
+    """joy.phontida.pho@gmail.com -> joy.phontida.pho (or joy.phontida.pho2 if taken)."""
+    base = re.sub(r"[^a-z0-9_.\-]", "", email.split("@")[0].lower())[:45] or "teacher"
+    base = base.ljust(3, "0")
+    name, n = base, 1
+    while db.scalar(select(User.id).where(User.username == name)) is not None:
+        n += 1
+        name = f"{base}{n}"
+    return name
+
+
 @router.post("/users", response_model=UserOut, status_code=201)
 def create_user(body: UserCreate, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
     u = User(
-        username=body.username,
+        username=body.username or _username_from_email(db, body.email),
         full_name=body.full_name,
-        email=(body.email or "").strip().lower() or None,
+        email=body.email,
         role=body.role,
-        password_hash=hash_password(body.password),
+        # No password given (Google-only): store a hash of a random secret nobody knows.
+        password_hash=hash_password(body.password or secrets.token_urlsafe(32)),
     )
     db.add(u)
     _commit(db, "ชื่อผู้ใช้หรืออีเมลนี้มีอยู่แล้ว")

@@ -113,3 +113,24 @@ def test_next_cannot_leave_the_site(seed, google):
 
 def test_error_message_shown_on_login_page(seed):
     assert "ยังไม่ได้ลงทะเบียนในระบบ" in Api().c.get("/login?error=google_no_user").text
+
+
+def test_google_only_teacher_needs_no_password(seed, google):
+    admin = Api("admin")
+    r = admin.post("/api/admin/users", json={"full_name": "ครูทดสอบ", "email": "Joy.Test@Gmail.com"})
+    assert r.status_code == 201, r.text
+    assert r.json()["username"] == "joy.test" and r.json()["email"] == "joy.test@gmail.com"
+    again = admin.post("/api/admin/users", json={"full_name": "ครูทดสอบ 2", "email": "joy.test@yahoo.com"}).json()
+    assert again["username"] == "joy.test2"  # made unique
+    a = Api()
+    state, nonce = _start(a)
+    assert _callback(a, google, state, email="joy.test@gmail.com", nonce=nonce).status_code == 303
+    assert a.get("/api/auth/me").json()["username"] == "joy.test"
+
+
+def test_user_needs_email_or_username_and_password(seed):
+    admin = Api("admin")
+    assert admin.post("/api/admin/users", json={"full_name": "x", "username": "abc"}).status_code == 422
+    assert admin.post("/api/admin/users", json={"full_name": "x", "password": "password123"}).status_code == 422
+    assert admin.post("/api/admin/users", json={"full_name": "x", "username": "abc", "password": "password123"}).status_code == 201
+    assert admin.post("/api/admin/users", json={"full_name": "x", "username": "a b", "password": "password123"}).status_code == 422

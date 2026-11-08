@@ -1,4 +1,5 @@
 """Pydantic request/response schemas."""
+import re
 from datetime import date, time
 from typing import Annotated
 
@@ -50,11 +51,26 @@ class UserOut(ORM):
 
 # ---------- Users (admin) ----------
 class UserCreate(In):
-    username: str = Field(min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_.\-]+$")
+    # Both may be left empty for a Google-only teacher: the username is then made from the
+    # e-mail and the account gets no usable password (an admin can set one later).
+    username: str | None = Field(default=None, max_length=50)
     full_name: str = Field(min_length=1, max_length=150)
     email: str | None = Field(default=None, max_length=255)
     role: Role = Role.teacher
-    password: Password
+    password: str | None = None
+
+    @model_validator(mode="after")
+    def _login_method(self):
+        self.username = (self.username or "").strip() or None
+        self.email = (self.email or "").strip().lower() or None
+        self.password = _check_password(self.password) if self.password else None
+        if self.username and not re.fullmatch(r"[A-Za-z0-9_.\-]{3,50}", self.username):
+            raise ValueError("ชื่อผู้ใช้ต้องเป็นภาษาอังกฤษ ตัวเลข หรือ _ . - ความยาว 3-50 ตัว")
+        if not self.email and not (self.username and self.password):
+            raise ValueError("ใส่อีเมล Google หรือใส่ทั้งชื่อผู้ใช้และรหัสผ่าน อย่างใดอย่างหนึ่ง")
+        if self.email and "@" not in self.email:
+            raise ValueError("อีเมลไม่ถูกต้อง")
+        return self
 
 
 class UserUpdate(In):

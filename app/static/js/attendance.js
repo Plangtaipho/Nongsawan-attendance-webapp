@@ -204,6 +204,16 @@ async function load() {
 async function save() {
   if (!els.subject.value) { toast("กรุณาเลือกวิชา", "error"); els.subject.focus(); return; }
   if (els.sub.checked && !els.subTeacher.value) { toast("กรุณาเลือกครูที่สอนแทน", "error"); els.subTeacher.focus(); return; }
+  // Catch a whole room marked ขาด by mistake before it lands in the reports.
+  const absent = students.filter((s) => s.status === "absent").length;
+  if (students.length >= 4 && absent * 2 > students.length) {
+    const ok = confirm(
+      `⚠️ มีนักเรียนขาด ${absent} จาก ${students.length} คน (เกินครึ่งห้อง)\n\n` +
+      `ถ้านักเรียนขาดจริง กด "ตกลง" เพื่อบันทึก\n` +
+      `ถ้ากดผิด กด "ยกเลิก" แล้วแก้สถานะก่อน (ค่าเริ่มต้นของทุกคนคือ "มา")`,
+    );
+    if (!ok) return;
+  }
   const body = {
     classroom_id: Number(els.room.value),
     period_id: Number(els.period.value),

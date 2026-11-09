@@ -48,8 +48,8 @@ def _in_use(db: Session, column, value) -> bool:
     return bool(db.scalar(select(func.count()).where(column == value)))
 
 
-def _delete(db: Session, admin: User, obj, entity: str) -> None:
-    audit.log(db, admin, "delete", entity, obj.id)
+def _delete(db: Session, admin: User, obj, entity: str, label: str | None = None) -> None:
+    audit.log(db, admin, "delete", entity, obj.id, {"name": label} if label else None)
     db.delete(obj)
     db.commit()
 
@@ -158,7 +158,7 @@ def delete_term(term_id: int, admin: User = Depends(require_admin), db: Session 
     t = _get(db, Term, term_id, "เทอม")
     if _in_use(db, AttendanceSession.term_id, t.id):
         raise HTTPException(status.HTTP_409_CONFLICT, "เทอมนี้มีการบันทึกการสอนแล้ว ลบไม่ได้")
-    _delete(db, admin, t, "term")
+    _delete(db, admin, t, "term", f"{t.term_no}/{t.academic_year}")
 
 
 # ---------------- Classrooms ----------------
@@ -192,7 +192,7 @@ def delete_classroom(classroom_id: int, admin: User = Depends(require_admin), db
     c = _get(db, Classroom, classroom_id, "ห้องเรียน")
     if _in_use(db, AttendanceSession.classroom_id, c.id) or _in_use(db, Enrollment.classroom_id, c.id):
         raise HTTPException(status.HTTP_409_CONFLICT, "ห้องนี้มีนักเรียนหรือการบันทึกการสอนแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
-    _delete(db, admin, c, "classroom")
+    _delete(db, admin, c, "classroom", c.name)
 
 
 # ---------------- Subjects ----------------
@@ -223,7 +223,7 @@ def delete_subject(subject_id: int, admin: User = Depends(require_admin), db: Se
     s = _get(db, Subject, subject_id, "วิชา")
     if _in_use(db, AttendanceSession.subject_id, s.id):
         raise HTTPException(status.HTTP_409_CONFLICT, "วิชานี้มีการบันทึกการสอนแล้ว ลบไม่ได้ (ปิดใช้งานแทนได้)")
-    _delete(db, admin, s, "subject")
+    _delete(db, admin, s, "subject", f"{s.subject_code} {s.name}")
 
 
 # ---------------- Periods ----------------
@@ -343,7 +343,7 @@ def delete_student(student_id: int, admin: User = Depends(require_admin), db: Se
         raise HTTPException(status.HTTP_409_CONFLICT, "นักเรียนคนนี้มีประวัติการบันทึกการสอนแล้ว ลบไม่ได้ (เปลี่ยนสถานะแทนได้)")
     for e in db.scalars(select(Enrollment).where(Enrollment.student_id == s.id)):
         db.delete(e)
-    audit.log(db, admin, "delete", "student", s.id, {"student_code": s.student_code})
+    audit.log(db, admin, "delete", "student", s.id, {"student_code": s.student_code, "name": s.full_name})
     db.delete(s)
     db.commit()
 

@@ -85,6 +85,7 @@ router.add_api_route("/reports", page("reports.html", active="reports"), methods
 router.add_api_route("/account", page("account.html", active="account"), methods=["GET"], response_class=HTMLResponse)
 router.add_api_route("/admin/students", page("admin/students.html", True, "students"), methods=["GET"], response_class=HTMLResponse)
 router.add_api_route("/admin/settings", page("admin/settings.html", True, "settings"), methods=["GET"], response_class=HTMLResponse)
+router.add_api_route("/admin/audit", page("admin/audit.html", True, "audit"), methods=["GET"], response_class=HTMLResponse)
 
 
 @router.get("/login", response_class=HTMLResponse)

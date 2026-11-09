@@ -8,6 +8,8 @@ const hhmm = (t) => (t || "").slice(0, 5);
 const TABS = {
   users: {
     title: "บัญชีครู",
+    search: "ค้นหาชื่อครู ชื่อผู้ใช้ หรืออีเมล",
+    searchText: (u) => u.email || "",
     hint: "ครูเข้าระบบด้วยปุ่ม Google (ใส่อีเมล Google) หรือชื่อผู้ใช้และรหัสผ่าน ถ้าใส่อีเมล Google ไม่ต้องตั้งรหัสผ่าน ปิดบัญชีแทนการลบ เพื่อเก็บประวัติการบันทึกการสอน",
     list: "/api/admin/users",
     url: (id) => (id ? `/api/admin/users/${id}` : "/api/admin/users"),
@@ -25,6 +27,7 @@ const TABS = {
   },
   terms: {
     title: "ภาคเรียน",
+    search: "ค้นหาภาคเรียน เช่น 2/2569",
     hint: "ตั้งช่วงวันที่ของแต่ละเทอม ระบบใช้วันที่บันทึกการสอนเพื่อจัดเข้าเทอมอัตโนมัติ ต้องมีเทอมปัจจุบัน 1 เทอม",
     list: "/api/admin/terms",
     url: (id) => (id ? `/api/admin/terms/${id}` : "/api/admin/terms"),
@@ -40,6 +43,7 @@ const TABS = {
   },
   classrooms: {
     title: "ห้องเรียน",
+    search: "ค้นหาห้อง เช่น ม.4/2",
     hint: "ห้องผูกกับปีการศึกษา (แสดงปีปัจจุบัน) ห้องจะถูกสร้างอัตโนมัติเมื่อนำเข้ารายชื่อนักเรียน",
     list: "/api/admin/classrooms",
     url: (id) => (id ? `/api/admin/classrooms/${id}` : "/api/admin/classrooms"),
@@ -54,6 +58,7 @@ const TABS = {
   },
   subjects: {
     title: "รายวิชา",
+    search: "ค้นหารหัสวิชา ชื่อวิชา ชั้น หรือกลุ่มสาระ",
     hint: "วิชาที่ปิดจะไม่แสดงในหน้าบันทึกการสอน แต่ยังอยู่ในรายงานย้อนหลัง",
     list: "/api/admin/subjects",
     url: (id) => (id ? `/api/admin/subjects/${id}` : "/api/admin/subjects"),
@@ -69,6 +74,7 @@ const TABS = {
   },
   periods: {
     title: "คาบเรียน",
+    search: "ค้นหาคาบ",
     hint: "เวลาคาบใช้เลือกคาบปัจจุบันให้อัตโนมัติในหน้าบันทึกการสอน",
     list: "/api/admin/periods",
     url: (id) => (id ? `/api/admin/periods/${id}` : "/api/admin/periods"),
@@ -84,6 +90,7 @@ const TABS = {
 };
 
 let tab = "users";
+const applyFilter = tableFilter($("t-q"), $("t-body"), $("t-count"));
 let editing = null;
 let currentFields = [];
 let defaultYear = new Date().getFullYear() + 543;
@@ -91,6 +98,8 @@ let defaultYear = new Date().getFullYear() + 543;
 async function load() {
   const cfg = TABS[tab];
   $("tab-hint").textContent = cfg.hint;
+  $("t-q").placeholder = cfg.search;
+  $("t-q").setAttribute("aria-label", cfg.search);
   $("subj-import").classList.toggle("hidden", tab !== "subjects");
   $("subj-errors").classList.add("hidden");
   $("t-head").replaceChildren(h("tr", {}, cfg.columns.map(([label]) => h("th", {}, label)), h("th", {})));
@@ -98,13 +107,14 @@ async function load() {
   $("loading").classList.remove("hidden");
   try {
     const rows = await api(cfg.list);
-    $("t-body").replaceChildren(...rows.map((r) => h("tr", {},
+    $("t-body").replaceChildren(...rows.map((r) => h("tr", { "data-search": cfg.searchText ? cfg.searchText(r) : null },
       cfg.columns.map(([, fn]) => h("td", {}, fn(r))),
       h("td", { class: "nowrap" },
         h("button", { type: "button", class: "btn btn-secondary btn-sm", onclick: () => openDialog(r) }, "แก้ไข"),
         cfg.deletable ? h("button", { type: "button", class: "btn btn-secondary btn-sm", onclick: () => remove(r) }, "ลบ") : null),
     )));
     $("t-empty").classList.toggle("hidden", rows.length > 0);
+    applyFilter(); // keep what was typed after saving or switching tabs
   } catch (e) {
     toast(e.message, "error");
   } finally {
@@ -208,6 +218,7 @@ $("subj-file").addEventListener("change", async (e) => {
 for (const b of document.querySelectorAll("[data-tab]")) {
   b.addEventListener("click", () => {
     tab = b.dataset.tab;
+    $("t-q").value = "";
     for (const x of document.querySelectorAll("[data-tab]")) x.setAttribute("aria-selected", String(x === b));
     load();
   });

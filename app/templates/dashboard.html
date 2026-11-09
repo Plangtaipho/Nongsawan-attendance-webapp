@@ -18,12 +18,19 @@
   <h2>รายห้อง</h2>
   <p class="muted small">ช่องสีเขียว = คาบที่บันทึกแล้ว · ตัวเลขเป็นจำนวน<strong>คน</strong> นักเรียนหนึ่งคนนับครั้งเดียวต่อวัน: ขาดคาบใดคาบหนึ่ง = ขาด, ลาบางคาบ (ไม่ขาด) = ลา, ที่เหลือ = มาครบ · อัตราเข้าเรียนรายคาบ = จำนวนครั้งที่มา ÷ จำนวนครั้งที่เช็คทั้งหมด</p>
   <div class="table-wrap">
+    <div class="search-row">
+      <input id="d-room-q" type="search" maxlength="50" placeholder="ค้นหาห้อง เช่น ม.4" aria-label="ค้นหาห้อง">
+    </div>
     <table>
       <thead><tr><th>ห้อง</th><th>คาบที่บันทึกแล้ว</th><th class="num">เช็คแล้ว (คน)</th><th class="num">มาครบ</th><th class="num">ลา</th><th class="num">ขาด</th></tr></thead>
       <tbody id="d-rooms"></tbody>
     </table>
   </div>
   <h2>นักเรียนที่ไม่ได้มาเรียนตามปกติ (แยกรายคาบ)</h2>
+  <div class="search-row">
+    <input id="d-q" type="search" maxlength="100" placeholder="ค้นหาชื่อนักเรียน เลขประจำตัว ห้อง หรือวิชา" aria-label="ค้นหานักเรียนที่ไม่ได้มาเรียน">
+    <span id="d-count" class="muted small hidden"></span>
+  </div>
   <div class="table-wrap">
     <table id="d-absent-table">
       <thead><tr><th>ห้อง</th><th>คาบ</th><th>นักเรียน</th><th>สถานะ</th><th>วิชา</th><th>หมายเหตุ</th></tr></thead>
@@ -33,4 +40,4 @@
   <div id="d-absent-empty" class="empty hidden">ไม่มี</div>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/dashboard.js?v=17"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/dashboard.js?v=18"></script>{% endblock %}

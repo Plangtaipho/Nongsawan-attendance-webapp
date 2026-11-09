@@ -18,6 +18,10 @@
   <label class="btn btn-secondary btn-sm" for="subj-file">นำเข้าจาก Excel</label>
   <input id="subj-file" type="file" accept=".xlsx" class="hidden">
 </div>
+<div class="search-row mt-2">
+  <input id="t-q" type="search" maxlength="100" placeholder="ค้นหา..." aria-label="ค้นหาในตาราง">
+  <span id="t-count" class="muted small hidden"></span>
+</div>
 <div id="subj-errors" class="alert alert-error mt-1 hidden" role="alert"></div>
 <div id="loading" class="loading hidden">กำลังโหลด...</div>
 <div class="table-wrap mt-2">
@@ -39,4 +43,4 @@
   </form>
 </dialog>
 {% endblock %}
-{% block scripts %}<script src="/static/js/admin_settings.js?v=16"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/admin_settings.js?v=17"></script>{% endblock %}

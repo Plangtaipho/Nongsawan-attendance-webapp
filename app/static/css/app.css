@@ -243,3 +243,5 @@ label.check input { width: 22px; height: 22px; min-height: 0; accent-color: var(
 .or-line { display: flex; align-items: center; gap: .75rem; margin: 1rem 0; color: var(--c-muted, #6b7280); font-size: .85rem; }
 .or-line::before, .or-line::after { content: ""; flex: 1; border-top: 1px solid var(--c-border, #e5e7eb); }
 .text-danger { color: var(--c-danger); font-weight: 700; }
+.search-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: calc(var(--space) * 1.5); }
+.search-row input[type=search] { flex: 1 1 260px; max-width: 420px; }

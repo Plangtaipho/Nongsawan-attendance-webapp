@@ -104,6 +104,29 @@ function fillSelect(select, items, { value = "id", label = "name", placeholder }
   if ([...select.options].some((o) => o.value === current)) select.value = current;
 }
 
+// Type-to-filter for a table already on the page. Matches anywhere in the row's text
+// (plus its data-search attribute), ignoring spaces and letter case.
+function tableFilter(input, tbody, countEl) {
+  const norm = (s) => (s || "").toLowerCase().replace(/\s+/g, "");
+  const apply = () => {
+    const q = norm(input.value);
+    let shown = 0, total = 0;
+    for (const tr of tbody.rows) {
+      if (tr.dataset.nofilter !== undefined) continue;
+      total++;
+      const ok = !q || norm(tr.textContent + " " + (tr.dataset.search || "")).includes(q);
+      tr.classList.toggle("hidden", !ok);
+      if (ok) shown++;
+    }
+    if (countEl) {
+      countEl.textContent = q ? `พบ ${shown} จาก ${total} รายการ` : "";
+      countEl.classList.toggle("hidden", !q);
+    }
+  };
+  input.addEventListener("input", apply);
+  return apply;
+}
+
 async function withBusy(button, fn) {
   const old = button.textContent;
   button.disabled = true;

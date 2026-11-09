@@ -7,6 +7,9 @@ function stat(value, label, cls = "") {
   return h("div", { class: "stat" }, h("div", { class: "v " + cls }, value), h("div", { class: "k" }, label));
 }
 
+const filterAbsent = tableFilter(document.getElementById("d-q"), document.getElementById("d-absent"), document.getElementById("d-count"));
+const filterRooms = tableFilter(document.getElementById("d-room-q"), document.getElementById("d-rooms"));
+
 async function load() {
   const q = new URLSearchParams({ scope: scopeEl ? scopeEl.value : "mine" });
   if (dateEl.value) q.set("day", dateEl.value);
@@ -44,6 +47,8 @@ async function load() {
       h("td", { class: "small" }, s.subject),
       h("td", { class: "small" }, s.note || ""),
     )));
+    filterRooms();
+    filterAbsent();
     document.getElementById("d-absent-table").classList.toggle("hidden", d.not_present.length === 0);
     document.getElementById("d-absent-empty").classList.toggle("hidden", d.not_present.length > 0);
     document.getElementById("d-content").classList.remove("hidden");

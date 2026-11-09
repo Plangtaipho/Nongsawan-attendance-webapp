@@ -245,3 +245,9 @@ label.check input { width: 22px; height: 22px; min-height: 0; accent-color: var(
 .text-danger { color: var(--c-danger); font-weight: 700; }
 .search-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: calc(var(--space) * 1.5); }
 .search-row input[type=search] { flex: 1 1 260px; max-width: 420px; }
+.warn-dialog { width: min(420px, calc(100% - 32px)); }
+.warn-body { padding: 24px; text-align: center; }
+.warn-icon { width: 56px; height: 56px; margin: 0 auto 12px; border-radius: 50%; background: #fee2e2; color: var(--c-danger); font-size: 32px; font-weight: 700; line-height: 56px; }
+.warn-body h2 { margin: 0 0 8px; color: var(--c-danger); }
+.warn-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+.warn-actions .btn { flex: 1 1 140px; }

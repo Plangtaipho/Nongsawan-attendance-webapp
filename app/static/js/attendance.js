@@ -207,10 +207,9 @@ async function save() {
   // Catch a whole room marked ขาด by mistake before it lands in the reports.
   const absent = students.filter((s) => s.status === "absent").length;
   if (students.length >= 4 && absent * 2 > students.length) {
-    const ok = confirm(
-      `⚠️ มีนักเรียนขาด ${absent} จาก ${students.length} คน (เกินครึ่งห้อง)\n\n` +
-      `ถ้านักเรียนขาดจริง กด "ตกลง" เพื่อบันทึก\n` +
-      `ถ้ากดผิด กด "ยกเลิก" แล้วแก้สถานะก่อน (ค่าเริ่มต้นของทุกคนคือ "มา")`,
+    const ok = await askConfirm(
+      `มีนักเรียนขาด ${absent} จาก ${students.length} คน`,
+      "เกินครึ่งห้อง กรุณาตรวจสอบว่าไม่ได้กดผิด (ค่าเริ่มต้นของทุกคนคือ \"มา\")",
     );
     if (!ok) return;
   }
@@ -235,6 +234,21 @@ async function save() {
     // Keep what the teacher tapped so they can simply press save again.
     toast(e.message, "error");
   }
+}
+
+// Warning pop-up drawn in the page (works the same on every phone browser).
+function askConfirm(title, text) {
+  const dlg = $("warn-dialog");
+  $("warn-title").textContent = title;
+  $("warn-text").textContent = text;
+  return new Promise((resolve) => {
+    const done = (v) => { dlg.close(); resolve(v); };
+    $("warn-ok").onclick = () => done(true);
+    $("warn-cancel").onclick = () => done(false);
+    dlg.oncancel = (e) => { e.preventDefault(); done(false); };
+    dlg.showModal();
+    $("warn-cancel").focus();
+  });
 }
 
 function periodLabel(id) {

@@ -64,8 +64,20 @@
   </form>
 </dialog>
 
+<dialog id="warn-dialog" class="warn-dialog" aria-labelledby="warn-title">
+  <div class="warn-body">
+    <div class="warn-icon" aria-hidden="true">!</div>
+    <h2 id="warn-title"></h2>
+    <p id="warn-text" class="muted"></p>
+    <div class="warn-actions">
+      <button id="warn-cancel" class="btn btn-secondary" type="button">ยกเลิก กลับไปแก้</button>
+      <button id="warn-ok" class="btn btn-danger" type="button">ขาดจริง บันทึกเลย</button>
+    </div>
+  </div>
+</dialog>
+
 <div id="savebar" class="savebar hidden">
   <button id="save-btn" class="btn" type="button">บันทึกการสอน</button>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/attendance.js?v=18"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/attendance.js?v=19"></script>{% endblock %}

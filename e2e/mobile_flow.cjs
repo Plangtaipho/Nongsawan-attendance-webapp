@@ -70,7 +70,24 @@ const SHOTS = process.env.SHOTS_DIR || "";
   await page.goto(BASE + "/reports");
   await page.waitForFunction(() => document.querySelector("#r-room").options.length > 1);
   await page.selectOption("#r-room", { label: "ม.1/1" });
-  await page.selectOption("#r-subject", { index: 1 });
+  await page.selectOption("#r-subject", { index: 2 }); // index 1 is "ทุกวิชา"
+  await page.click("#r-show");
+  await page.waitForSelector("#r-result:not(.hidden)");
+
+  // All rooms, all subjects: summary list, Excel download, one print page for everything.
+  const pick = await page.inputValue("#r-subject");
+  await page.selectOption("#r-room", { label: "ทุกห้อง" });
+  await page.selectOption("#r-subject", { label: "ทุกวิชา" });
+  await page.click("#r-show");
+  await page.waitForSelector("#r-list:not(.hidden) tbody tr");
+  await shot("03a-report-all");
+  const [dl] = await Promise.all([page.waitForEvent("download"), page.click("#r-xlsx")]);
+  const xlsx = require("fs").readFileSync(await dl.path());
+  assert.strictEqual(xlsx.subarray(0, 2).toString(), "PK"); // an .xlsx is a zip file
+  if (SHOTS) await dl.saveAs(`${SHOTS}/report-all.xlsx`);
+  console.log("ok  all-rooms list + xlsx download");
+  await page.selectOption("#r-room", { label: "ม.1/1" });
+  await page.selectOption("#r-subject", pick);
   await page.click("#r-show");
   await page.waitForSelector("#r-result:not(.hidden)");
   const href = await page.getAttribute("#r-print", "href");

@@ -8,12 +8,23 @@
     <div><label for="r-room">ห้อง</label><select id="r-room"></select></div>
     <div><label for="r-subject">วิชา</label><select id="r-subject"></select></div>
   </div>
+  <p class="muted small mt-1 mb-0">เลือก "ทุกห้อง" หรือ "ทุกวิชา" เพื่อออกรายงานหลายรายการพร้อมกัน (เฉพาะห้อง/วิชาที่มีการบันทึกในเทอมนี้)</p>
   <div class="actions mt-2">
     <button id="r-show" class="btn" type="button">แสดงรายงาน</button>
     <a id="r-print" class="btn btn-secondary hidden" target="_blank" rel="noopener">พิมพ์ / บันทึกเป็น PDF</a>
+    <a id="r-xlsx" class="btn btn-secondary hidden">ดาวน์โหลด Excel (.xlsx)</a>
   </div>
 </section>
 <div id="r-loading" class="loading hidden">กำลังโหลด...</div>
+<div id="r-list" class="hidden">
+  <p id="r-list-caption" class="muted"></p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>ห้อง</th><th>วิชา</th><th>ผู้สอน</th><th class="num">คาบ</th><th class="num">นักเรียน</th><th class="num">ต่ำกว่า 80%</th><th></th></tr></thead>
+      <tbody id="r-list-body"></tbody>
+    </table>
+  </div>
+</div>
 <div id="r-result" class="hidden">
   <p id="r-caption" class="muted"></p>
   <div class="table-wrap">
@@ -24,4 +35,4 @@
   </div>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/reports.js?v=16"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/reports.js?v=17"></script>{% endblock %}

@@ -11,7 +11,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.deps import get_optional_user
 from app.models import Role, User
-from app.routers.reports import load_term_report
+from app.routers.reports import load_term_reports
 from app.security import new_csrf_token
 
 TEMPLATES = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
@@ -115,14 +115,21 @@ PRINT_COLUMNS = 25
 def term_print(
     request: Request,
     term_id: int,
-    classroom_id: int,
-    subject_id: int,
+    classroom_id: int | None = None,
+    subject_id: int | None = None,
     db: Session = Depends(get_db),
     user: User | None = Depends(get_optional_user),
 ):
+    """Printable term report; leave out classroom_id / subject_id to print every room / subject with checks."""
     if user is None:
         return _login_redirect(request)
-    report = load_term_report(db, term_id, classroom_id, subject_id)
-    sessions = report["sessions"]
-    chunks = [list(range(i, min(i + PRINT_COLUMNS, len(sessions)))) for i in range(0, len(sessions), PRINT_COLUMNS)] or [[]]
-    return render(request, "report_print.html", user, report=report, chunks=chunks, printed_on=thai_date(date.today(), short=False))
+    term, items = load_term_reports(db, term_id, classroom_id, subject_id)
+    reports = []
+    for report in items:
+        sessions = report["sessions"]
+        chunks = [list(range(i, min(i + PRINT_COLUMNS, len(sessions)))) for i in range(0, len(sessions), PRINT_COLUMNS)] or [[]]
+        reports.append({"report": report, "chunks": chunks})
+    return render(
+        request, "report_print.html", user,
+        reports=reports, term=term, printed_on=thai_date(date.today(), short=False),
+    )

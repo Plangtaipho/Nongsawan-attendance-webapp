@@ -50,3 +50,63 @@ def test_print_page_renders_thai(seed):
 def test_report_404_for_bad_ids(seed):
     r = Api("teacher1").get("/api/reports/term", params={"term_id": 999, "classroom_id": seed["room_id"], "subject_id": seed["subject_id"]})
     assert r.status_code == 404
+
+
+def _two_rooms(seed):
+    """Room 1 gets two checks; room 2 (one student) gets one."""
+    t1 = Api("teacher1")
+    t1.post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "present")))
+    t1.post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "personal_leave"), period="p2"))
+    other = session_body(seed, statuses=("absent",))
+    other.update(classroom_id=seed["other_room_id"], records=[{"student_id": seed["outsider"], "status": "absent"}])
+    assert t1.post("/api/attendance/sessions", json=other).status_code == 200
+
+
+def test_term_list_all_rooms(seed):
+    _two_rooms(seed)
+    a = Api("teacher2")
+    items = a.get("/api/reports/term-list", params={"term_id": seed["term_id"], "subject_id": seed["subject_id"]}).json()
+    assert [(x["classroom"]["name"], x["sessions"], x["students"]) for x in items] == [("ม.1/1", 2, 3), ("ม.1/2", 1, 1)]
+    assert items[0]["teachers"] == ["ครูหนึ่ง"] and items[1]["low"] == 1
+    # Every room and every subject.
+    assert len(a.get("/api/reports/term-list", params={"term_id": seed["term_id"]}).json()) == 2
+
+
+def test_print_all_rooms(seed):
+    _two_rooms(seed)
+    html = Api("teacher2").get("/reports/term/print", params={"term_id": seed["term_id"]}).text
+    assert "ชั้น ม.1/1" in html and "ชั้น ม.1/2" in html and "2 รายการ" in html
+
+
+def test_xlsx_all_rooms(seed):
+    import io
+
+    from openpyxl import load_workbook
+
+    _two_rooms(seed)
+    r = Api("teacher2").get("/api/reports/term.xlsx", params={"term_id": seed["term_id"]})
+    assert r.status_code == 200
+    assert "attachment" in r.headers["content-disposition"] and ".xlsx" in r.headers["content-disposition"]
+    wb = load_workbook(io.BytesIO(r.content))
+    assert wb.sheetnames == ["สรุป", "ม.1-1 ค21101", "ม.1-2 ค21101", "หัวข้อการสอน"]
+    ws = wb["ม.1-1 ค21101"]
+    rows = [[c.value for c in row] for row in ws.iter_rows(min_row=7, max_row=9)]
+    # เลขที่, code, name, 2 periods, มา ลา ขาด ร้อยละ
+    assert rows[1][3:] == ["ข", "ข", 0, 0, 2, 0.0]
+    assert rows[2][3:] == ["/", "ล", 1, 1, 0, 50.0]
+    assert wb["สรุป"]["A4"].value == "ม.1/1" and wb["สรุป"]["E4"].value == 2
+    assert wb["หัวข้อการสอน"].max_row == 4  # header + 3 checks
+
+
+def test_xlsx_single_room_with_no_checks(seed):
+    r = Api("teacher1").get(
+        "/api/reports/term.xlsx", params={"term_id": seed["term_id"], "classroom_id": seed["room_id"], "subject_id": seed["subject_id"]}
+    )
+    assert r.status_code == 200
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    wb = load_workbook(BytesIO(r.content))
+    assert wb.sheetnames == ["สรุป", "ม.1-1 ค21101", "หัวข้อการสอน"]
+    assert Api("teacher1").get("/api/reports/term.xlsx", params={"term_id": 9999}).status_code == 404

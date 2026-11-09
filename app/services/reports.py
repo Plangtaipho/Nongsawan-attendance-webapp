@@ -94,34 +94,75 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
     }
 
 
-def term_report(db: Session, term: Term, classroom: Classroom, subject: Subject) -> dict:
-    sessions = db.scalars(
+def _room_key(c: Classroom):
+    return (c.grade_level, int(c.room_no) if str(c.room_no).isdigit() else 0, str(c.room_no))
+
+
+def term_reports(db: Session, term: Term, classroom_id: int | None = None, subject_id: int | None = None) -> list[dict]:
+    """Term reports for one room/subject, or for every room and/or subject that has checks this term.
+
+    Everything is loaded with a handful of queries so a whole-school export stays quick.
+    """
+    stmt = (
         select(AttendanceSession)
         .options(
             selectinload(AttendanceSession.records),
             selectinload(AttendanceSession.period),
             selectinload(AttendanceSession.teacher),
             selectinload(AttendanceSession.substitute_for),
+            selectinload(AttendanceSession.classroom),
+            selectinload(AttendanceSession.subject),
         )
-        .where(
-            AttendanceSession.term_id == term.id,
-            AttendanceSession.classroom_id == classroom.id,
-            AttendanceSession.subject_id == subject.id,
-        )
-        .order_by(AttendanceSession.session_date, AttendanceSession.period_id)
-    ).all()
+        .where(AttendanceSession.term_id == term.id)
+    )
+    if classroom_id is not None:
+        stmt = stmt.where(AttendanceSession.classroom_id == classroom_id)
+    if subject_id is not None:
+        stmt = stmt.where(AttendanceSession.subject_id == subject_id)
+    sessions = db.scalars(stmt.order_by(AttendanceSession.session_date, AttendanceSession.period_id)).all()
+    # Sessions are ordered by date then period id; keep period order by number within a day.
+    sessions = sorted(sessions, key=lambda s: (s.session_date, s.period.period_no))
 
-    # Students currently in the room, plus anyone with records here who has since moved.
-    enrolled = db.execute(
-        select(Student, Enrollment.class_number)
+    groups: dict[tuple[int, int], list[AttendanceSession]] = {}
+    rooms: dict[int, Classroom] = {}
+    subjects: dict[int, Subject] = {}
+    for s in sessions:
+        groups.setdefault((s.classroom_id, s.subject_id), []).append(s)
+        rooms[s.classroom_id], subjects[s.subject_id] = s.classroom, s.subject
+    if classroom_id is not None and subject_id is not None and not groups:
+        room, subject = db.get(Classroom, classroom_id), db.get(Subject, subject_id)
+        if room and subject:  # a single report with no checks yet still lists the students
+            groups[(room.id, subject.id)] = []
+            rooms[room.id], subjects[subject.id] = room, subject
+    if not groups:
+        return []
+
+    enrolled: dict[int, list[tuple[Student, int | None]]] = {rid: [] for rid in rooms}
+    for st, number, rid in db.execute(
+        select(Student, Enrollment.class_number, Enrollment.classroom_id)
         .join(Enrollment, Enrollment.student_id == Student.id)
-        .where(Enrollment.classroom_id == classroom.id)
-    ).all()
+        .where(Enrollment.classroom_id.in_(list(rooms)))
+    ):
+        enrolled[rid].append((st, number))
+    known = {st.id for lst in enrolled.values() for st, _ in lst}
+    others_ids = {r.student_id for s in sessions for r in s.records} - known
+    others = {st.id: st for st in db.scalars(select(Student).where(Student.id.in_(others_ids)))} if others_ids else {}
+
+    keys = sorted(groups, key=lambda k: (_room_key(rooms[k[0]]), subjects[k[1]].subject_code))
+    return [_build(term, rooms[rid], subjects[sid], groups[(rid, sid)], enrolled[rid], others) for rid, sid in keys]
+
+
+def term_report(db: Session, term: Term, classroom: Classroom, subject: Subject) -> dict:
+    return term_reports(db, term, classroom.id, subject.id)[0]
+
+
+def _build(term: Term, classroom: Classroom, subject: Subject, sessions: list[AttendanceSession],
+           enrolled: list[tuple[Student, int | None]], others: dict[int, Student]) -> dict:
+    # Students currently in the room, plus anyone with records here who has since moved.
     students: dict[int, tuple[Student, int | None]] = {s.id: (s, n) for s, n in enrolled}
-    recorded_ids = {r.student_id for s in sessions for r in s.records} - set(students)
-    if recorded_ids:
-        for s in db.scalars(select(Student).where(Student.id.in_(recorded_ids))):
-            students[s.id] = (s, None)
+    for sid in {r.student_id for s in sessions for r in s.records} - set(students):
+        if sid in others:
+            students[sid] = (others[sid], None)
 
     status_map = {(r.session_id, r.student_id): bucket(r.status) for s in sessions for r in s.records}
     rows = []

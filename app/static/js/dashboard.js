@@ -14,13 +14,14 @@ async function load() {
   try {
     const d = await api("/api/reports/daily?" + q);
     if (!dateEl.value) dateEl.value = d.date;
-    const t = d.totals;
+    const p = d.people;
     document.getElementById("d-stats").replaceChildren(
       stat(d.session_count, "คาบที่บันทึกแล้ว"),
-      stat(d.attendance_rate === null ? "-" : d.attendance_rate + "%", "อัตราเข้าเรียน"),
-      stat(t.present, "มา"),
-      stat(t.leave, "ลา"),
-      stat(t.absent, "ขาด"),
+      stat(`${p.checked} / ${p.students}`, "นักเรียนที่ถูกเช็คแล้ว (คน)"),
+      stat(p.present, "มาครบทุกคาบ (คน)"),
+      stat(p.leave, "ลาบางคาบ/ทั้งวัน (คน)"),
+      stat(p.absent, "ขาดอย่างน้อย 1 คาบ (คน)"),
+      stat(d.attendance_rate === null ? "-" : d.attendance_rate + "%", "อัตราเข้าเรียนรายคาบ"),
     );
 
     document.getElementById("d-rooms").replaceChildren(...d.classrooms.map((r) => {
@@ -28,9 +29,10 @@ async function load() {
       return h("tr", {},
         h("td", { class: "nowrap" }, r.name),
         h("td", {}, h("div", { class: "period-dots" }, d.periods.map((p) => h("span", { class: "period-dot" + (checked.has(p) ? " done" : ""), title: "คาบ " + p }, p)))),
-        h("td", { class: "num" }, r.counts.present),
-        h("td", { class: "num" }, r.counts.leave),
-        h("td", { class: "num" }, r.counts.absent),
+        h("td", { class: "num" }, r.people.checked ? `${r.people.checked} / ${r.students}` : `- / ${r.students}`),
+        h("td", { class: "num" }, r.people.present),
+        h("td", { class: "num" }, r.people.leave),
+        h("td", { class: "num" + (r.people.absent ? " text-danger" : "") }, r.people.absent),
       );
     }));
 

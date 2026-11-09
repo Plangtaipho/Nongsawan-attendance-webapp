@@ -110,3 +110,17 @@ def test_xlsx_single_room_with_no_checks(seed):
     wb = load_workbook(BytesIO(r.content))
     assert wb.sheetnames == ["สรุป", "ม.1-1 ค21101", "หัวข้อการสอน"]
     assert Api("teacher1").get("/api/reports/term.xlsx", params={"term_id": 9999}).status_code == 404
+
+
+def test_daily_counts_people_once_per_day(seed):
+    """3 students, 2 periods: counts by period would be 6; by student it is 3."""
+    t1 = Api("teacher1")
+    t1.post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "absent", "present")))
+    t1.post("/api/attendance/sessions", json=session_body(seed, statuses=("present", "present", "personal_leave"), period="p2"))
+    d = Api("admin").get("/api/reports/daily", params={"scope": "all"}).json()
+    assert d["totals"] == {"present": 4, "leave": 1, "absent": 1}  # ครั้ง
+    assert d["people"] == {"students": 4, "checked": 3, "present": 1, "leave": 1, "absent": 1}  # คน (room 2 has 1 student)
+    room = next(c for c in d["classrooms"] if c["name"] == "ม.1/1")
+    assert room["students"] == 3 and room["people"] == {"checked": 3, "present": 1, "leave": 1, "absent": 1}
+    mine = Api("teacher1").get("/api/reports/daily").json()["people"]
+    assert mine["students"] == 3

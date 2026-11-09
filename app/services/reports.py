@@ -1,7 +1,7 @@
 """Queries behind the daily dashboard and the term report."""
 from datetime import date
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models import (
@@ -12,6 +12,7 @@ from app.models import (
     Enrollment,
     Period,
     Student,
+    StudentStatus,
     Subject,
     Term,
 )
@@ -26,6 +27,9 @@ BUCKET_OF = {
     AttendanceStatus.personal_leave.value: "leave",
     AttendanceStatus.sick_leave.value: "leave",
 }
+
+
+SEVERITY = {"present": 0, "leave": 1, "absent": 2}
 
 
 def bucket(status: AttendanceStatus | str) -> str:
@@ -57,18 +61,37 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
     ).all()
     periods = db.scalars(select(Period).order_by(Period.period_no)).all()
 
-    totals = _empty_counts()
-    by_room: dict[int, dict] = {
-        r.id: {"id": r.id, "name": r.name, "counts": _empty_counts(), "checked_periods": []} for r in rooms
-    }
+    # Active students per room, to show "checked X of Y students".
+    enrolled = dict(
+        db.execute(
+            select(Enrollment.classroom_id, func.count())
+            .join(Student, Student.id == Enrollment.student_id)
+            .where(
+                Enrollment.classroom_id.in_([r.id for r in rooms] or [0]),
+                Enrollment.is_active.is_(True),
+                Student.status == StudentStatus.active,
+            )
+            .group_by(Enrollment.classroom_id)
+        ).all()
+    )
+
+    def new_room(rid: int, name: str) -> dict:
+        return {"id": rid, "name": name, "students": enrolled.get(rid, 0), "counts": _empty_counts(), "checked_periods": [], "_worst": {}}
+
+    totals = _empty_counts()  # per student per period (ครั้ง)
+    by_room: dict[int, dict] = {r.id: new_room(r.id, r.name) for r in rooms}
     not_present = []
     for s in sessions:
-        room = by_room.setdefault(s.classroom_id, {"id": s.classroom_id, "name": s.classroom.name, "counts": _empty_counts(), "checked_periods": []})
+        room = by_room.setdefault(s.classroom_id, new_room(s.classroom_id, s.classroom.name))
         room["checked_periods"].append(s.period.period_no)
         for r in s.records:
             b = bucket(r.status)
             totals[b] += 1
             room["counts"][b] += 1
+            # Each student counts once a day: absent in any period beats leave, which beats present.
+            prev = room["_worst"].get(r.student_id)
+            if prev is None or SEVERITY[b] > SEVERITY[prev]:
+                room["_worst"][r.student_id] = b
             if b != "present":
                 not_present.append(
                     {
@@ -83,10 +106,24 @@ def daily(db: Session, day: date, teacher_id: int | None, academic_year: int) ->
                 )
     not_present.sort(key=lambda x: (x["classroom"], x["period_no"], x["student_code"]))
     total_records = sum(totals.values())
+
+    people = {"students": 0, "checked": 0, **_empty_counts()}
+    for room in by_room.values():
+        worst = room.pop("_worst")
+        room["people"] = {"checked": len(worst), **_empty_counts()}
+        for b in worst.values():
+            room["people"][b] += 1
+            people[b] += 1
+        room["checked_periods"].sort()
+        people["checked"] += len(worst)
+        # The teacher's own view only counts rooms they checked today.
+        if not teacher_id or room["checked_periods"]:
+            people["students"] += room["students"]
     return {
         "date": day.isoformat(),
         "session_count": len(sessions),
         "totals": totals,
+        "people": people,
         "attendance_rate": round(100 * totals["present"] / total_records, 1) if total_records else None,
         "periods": [p.period_no for p in periods],
         "classrooms": list(by_room.values()),

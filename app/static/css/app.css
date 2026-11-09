@@ -242,3 +242,4 @@ label.check input { width: 22px; height: 22px; min-height: 0; accent-color: var(
 .g-logo { width: 20px; height: 20px; flex: none; }
 .or-line { display: flex; align-items: center; gap: .75rem; margin: 1rem 0; color: var(--c-muted, #6b7280); font-size: .85rem; }
 .or-line::before, .or-line::after { content: ""; flex: 1; border-top: 1px solid var(--c-border, #e5e7eb); }
+.text-danger { color: var(--c-danger); font-weight: 700; }

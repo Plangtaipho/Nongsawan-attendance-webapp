@@ -16,14 +16,14 @@
 <div id="d-content" class="hidden">
   <div id="d-stats" class="stat-grid"></div>
   <h2>รายห้อง</h2>
-  <p class="muted small">ช่องสีเขียว = คาบที่บันทึกแล้ว</p>
+  <p class="muted small">ช่องสีเขียว = คาบที่บันทึกแล้ว · ตัวเลขเป็นจำนวน<strong>คน</strong> นักเรียนหนึ่งคนนับครั้งเดียวต่อวัน: ขาดคาบใดคาบหนึ่ง = ขาด, ลาบางคาบ (ไม่ขาด) = ลา, ที่เหลือ = มาครบ · อัตราเข้าเรียนรายคาบ = จำนวนครั้งที่มา ÷ จำนวนครั้งที่เช็คทั้งหมด</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>ห้อง</th><th>คาบที่บันทึกแล้ว</th><th class="num">มา</th><th class="num">ลา</th><th class="num">ขาด</th></tr></thead>
+      <thead><tr><th>ห้อง</th><th>คาบที่บันทึกแล้ว</th><th class="num">เช็คแล้ว (คน)</th><th class="num">มาครบ</th><th class="num">ลา</th><th class="num">ขาด</th></tr></thead>
       <tbody id="d-rooms"></tbody>
     </table>
   </div>
-  <h2>นักเรียนที่ไม่ได้มาเรียนตามปกติ</h2>
+  <h2>นักเรียนที่ไม่ได้มาเรียนตามปกติ (แยกรายคาบ)</h2>
   <div class="table-wrap">
     <table id="d-absent-table">
       <thead><tr><th>ห้อง</th><th>คาบ</th><th>นักเรียน</th><th>สถานะ</th><th>วิชา</th><th>หมายเหตุ</th></tr></thead>
@@ -33,4 +33,4 @@
   <div id="d-absent-empty" class="empty hidden">ไม่มี</div>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/dashboard.js?v=16"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/dashboard.js?v=17"></script>{% endblock %}

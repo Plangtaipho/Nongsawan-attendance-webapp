@@ -1,13 +1,13 @@
 """Taking attendance for one period, and listing past sessions."""
-from datetime import date
+from datetime import UTC, date, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, selectinload
 
 from app.database import get_db
-from app.deps import get_current_user, require_admin, today, verify_csrf
+from app.deps import get_current_user, today, verify_csrf
 from app.models import (
     LEARNING_AREAS,
     AttendanceRecord,
@@ -19,7 +19,7 @@ from app.models import (
     Subject,
     User,
 )
-from app.schemas import SessionIn
+from app.schemas import SessionIn, SessionMoveIn
 from app.services import audit
 from app.services.school import classroom_students, current_academic_year, current_term, term_for_date
 
@@ -28,6 +28,45 @@ router = APIRouter(prefix="/api/attendance", tags=["attendance"], dependencies=[
 
 def can_edit(user: User, s: AttendanceSession) -> bool:
     return user.role == Role.admin or s.teacher_id == user.id
+
+
+def utc_now() -> datetime:
+    return datetime.now(UTC).replace(tzinfo=None)
+
+
+def utc_iso(dt: datetime | None) -> str | None:
+    """Stored times are naive UTC; tell the browser so it shows Thai local time."""
+    return dt.replace(tzinfo=UTC).isoformat() if dt else None
+
+
+def edit_info(s: AttendanceSession) -> dict:
+    return {
+        "edited_by": s.updated_by.full_name if s.edited_at and s.updated_by else None,
+        "edited_at": utc_iso(s.edited_at),
+    }
+
+
+def taken_message(s: AttendanceSession) -> str:
+    return (
+        f"คาบนี้ {s.teacher.full_name} บันทึกไว้แล้ว ({s.subject.name}) "
+        "ถ้าบันทึกผิดคาบ ให้ผู้บันทึกหรือผู้ดูแลระบบเปิดคาบนั้นแล้วกด \"ย้ายไปคาบอื่น\" หรือ \"ลบบันทึกนี้\""
+    )
+
+
+def load_session(db: Session, session_id: int) -> AttendanceSession:
+    s = db.scalar(
+        select(AttendanceSession)
+        .options(
+            selectinload(AttendanceSession.records),
+            selectinload(AttendanceSession.teacher),
+            selectinload(AttendanceSession.subject),
+            selectinload(AttendanceSession.period),
+        )
+        .where(AttendanceSession.id == session_id)
+    )
+    if s is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบรายการบันทึกการสอน")
+    return s
 
 
 @router.get("/options")
@@ -83,6 +122,7 @@ def get_session(
             selectinload(AttendanceSession.teacher),
             selectinload(AttendanceSession.substitute_for),
             selectinload(AttendanceSession.subject),
+            selectinload(AttendanceSession.updated_by),
         )
         .where(
             AttendanceSession.classroom_id == classroom_id,
@@ -116,6 +156,7 @@ def get_session(
                 "substitute_for_id": s.substitute_for_id,
                 "substitute_for_name": s.substitute_for.full_name if s.substitute_for else None,
                 "updated_at": s.updated_at.isoformat(),
+                **edit_info(s),
                 "can_edit": can_edit(user, s),
             }
             if s
@@ -147,7 +188,11 @@ def save_session(body: SessionIn, db: Session = Depends(get_db), user: User = De
 
     s = db.scalar(
         select(AttendanceSession)
-        .options(selectinload(AttendanceSession.records))
+        .options(
+            selectinload(AttendanceSession.records),
+            selectinload(AttendanceSession.teacher),
+            selectinload(AttendanceSession.subject),
+        )
         .where(
             AttendanceSession.classroom_id == body.classroom_id,
             AttendanceSession.period_id == body.period_id,
@@ -164,7 +209,10 @@ def save_session(body: SessionIn, db: Session = Depends(get_db), user: User = De
         )
         db.add(s)
     elif not can_edit(user, s):
-        raise HTTPException(status.HTTP_403_FORBIDDEN, "คาบนี้ครูท่านอื่นบันทึกไว้แล้ว แก้ไขได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ")
+        raise HTTPException(status.HTTP_403_FORBIDDEN, taken_message(s))
+    else:
+        s.edited_at = utc_now()
+    s.updated_by_id = user.id
 
     before = {r.student_id: r.status.value for r in s.records} if not created else {}
     s.term_id, s.subject_id = term.id, body.subject_id
@@ -213,9 +261,11 @@ def list_sessions(
         selectinload(AttendanceSession.period),
         selectinload(AttendanceSession.teacher),
         selectinload(AttendanceSession.substitute_for),
+        selectinload(AttendanceSession.updated_by),
     )
     if mine or user.role != Role.admin:
-        stmt = stmt.where(AttendanceSession.teacher_id == user.id)
+        # Sessions I recorded, plus ones I last edited for someone else (e.g. an admin fixing a teacher's check).
+        stmt = stmt.where(or_(AttendanceSession.teacher_id == user.id, AttendanceSession.updated_by_id == user.id))
     if date_from:
         stmt = stmt.where(AttendanceSession.session_date >= date_from)
     if date_to:
@@ -245,23 +295,75 @@ def list_sessions(
             "topic": s.topic,
             "teacher": s.teacher.full_name,
             "substitute_for": s.substitute_for.full_name if s.substitute_for else None,
+            "is_mine": s.teacher_id == user.id,
+            **edit_info(s),
             "counts": counts[s.id],
         }
         for s in sessions
     ]
 
 
-@router.delete("/sessions/{session_id}", status_code=204)
-def delete_session(session_id: int, admin: User = Depends(require_admin), db: Session = Depends(get_db)):
-    s = db.scalar(select(AttendanceSession).options(selectinload(AttendanceSession.records)).where(AttendanceSession.id == session_id))
-    if s is None:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบรายการบันทึกการสอน")
+@router.post("/sessions/{session_id}/move")
+def move_session(session_id: int, body: SessionMoveIn, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """Move a check recorded in the wrong period or on the wrong date. Students, statuses and topic go with it."""
+    s = load_session(db, session_id)
+    if not can_edit(user, s):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "ย้ายได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ")
+    if body.session_date > today():
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "ไม่สามารถย้ายไปวันที่ในอนาคตได้")
+    term = term_for_date(db, body.session_date)
+    if term is None:
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "วันที่นี้ไม่อยู่ในช่วงเทอมใด")
+    period = db.get(Period, body.period_id)
+    if period is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "ไม่พบคาบเรียน")
+    if (s.period_id, s.session_date) == (body.period_id, body.session_date):
+        raise HTTPException(status.HTTP_400_BAD_REQUEST, "เป็นคาบและวันที่เดิมอยู่แล้ว")
+    other = db.scalar(
+        select(AttendanceSession)
+        .options(selectinload(AttendanceSession.teacher), selectinload(AttendanceSession.subject))
+        .where(
+            AttendanceSession.classroom_id == s.classroom_id,
+            AttendanceSession.period_id == body.period_id,
+            AttendanceSession.session_date == body.session_date,
+        )
+    )
+    if other is not None:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            f"คาบ {period.period_no} วันนั้นมีบันทึกอยู่แล้วโดย {other.teacher.full_name} ({other.subject.name}) "
+            "ถ้าเป็นบันทึกซ้ำ ให้ลบรายการที่ไม่ต้องการก่อน",
+        )
+
+    before = {"period_no": s.period.period_no, "period_id": s.period_id, "date": s.session_date.isoformat()}
+    s.period_id, s.session_date, s.term_id = body.period_id, body.session_date, term.id
+    s.updated_by_id, s.edited_at = user.id, utc_now()
+    try:
+        db.flush()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status.HTTP_409_CONFLICT, "มีผู้บันทึกคาบนั้นพร้อมกัน กรุณาโหลดหน้าใหม่แล้วตรวจสอบอีกครั้ง")
     audit.log(
-        db, admin, "delete", "attendance_session", s.id,
+        db, user, "move", "attendance_session", s.id,
+        {"from": before, "to": {"period_no": period.period_no, "period_id": period.id, "date": body.session_date.isoformat()}},
+    )
+    db.commit()
+    return {"id": s.id, "period_id": s.period_id, "period_no": period.period_no, "session_date": s.session_date.isoformat()}
+
+
+@router.delete("/sessions/{session_id}", status_code=204)
+def delete_session(session_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    """The recorder or an admin can delete a check (e.g. recorded in the wrong room/period). Kept in the audit log."""
+    s = load_session(db, session_id)
+    if not can_edit(user, s):
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "ลบได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ")
+    audit.log(
+        db, user, "delete", "attendance_session", s.id,
         {
             "classroom_id": s.classroom_id, "subject_id": s.subject_id, "period_id": s.period_id,
             "date": s.session_date.isoformat(), "teacher_id": s.teacher_id, "topic": s.topic,
-            "records": {r.student_id: r.status.value for r in s.records},
+            "activity": s.activity, "substitute_for_id": s.substitute_for_id,
+            "records": {r.student_id: {"status": r.status.value, "note": r.note} for r in s.records},
         },
     )
     db.delete(s)

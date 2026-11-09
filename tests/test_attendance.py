@@ -90,9 +90,71 @@ def test_history_only_own_for_teacher(seed):
 
 def test_admin_delete_session(seed):
     sid = Api("teacher1").post("/api/attendance/sessions", json=session_body(seed)).json()["id"]
-    assert Api("teacher1").delete(f"/api/attendance/sessions/{sid}").status_code == 403
+    assert Api("teacher2").delete(f"/api/attendance/sessions/{sid}").status_code == 403
     assert Api("admin").delete(f"/api/attendance/sessions/{sid}").status_code == 204
     assert Api("admin").get("/api/attendance/sessions", params={"mine": False}).json() == []
+
+
+def test_recorder_can_delete_own_session(seed):
+    a = Api("teacher1")
+    sid = a.post("/api/attendance/sessions", json=session_body(seed)).json()["id"]
+    assert a.delete(f"/api/attendance/sessions/{sid}").status_code == 204
+    # The period is free again for the teacher who really taught it.
+    assert Api("teacher2").post("/api/attendance/sessions", json=session_body(seed)).status_code == 200
+
+
+def _session(a, seed, period="p1", day=None):
+    return a.get(
+        "/api/attendance/session",
+        params={"classroom_id": seed["room_id"], "period_id": seed[period], "session_date": (day or seed["today"]).isoformat()},
+    ).json()["session"]
+
+
+def test_wrong_period_moved_frees_the_slot(seed):
+    """Teacher 1 saved period 2 by mistake; teacher 2 teaches period 2."""
+    t1, t2 = Api("teacher1"), Api("teacher2")
+    sid = t1.post("/api/attendance/sessions", json=session_body(seed, period="p2")).json()["id"]
+    r = t2.post("/api/attendance/sessions", json=session_body(seed, period="p2"))
+    assert r.status_code == 403 and "ครูหนึ่ง" in r.json()["detail"] and "ย้ายไปคาบอื่น" in r.json()["detail"]
+
+    assert t2.post(f"/api/attendance/sessions/{sid}/move", json={"period_id": seed["p1"], "session_date": seed["today"].isoformat()}).status_code == 403
+    r = t1.post(f"/api/attendance/sessions/{sid}/move", json={"period_id": seed["p1"], "session_date": seed["today"].isoformat()})
+    assert r.status_code == 200, r.text
+    assert r.json()["period_no"] == 1
+
+    moved = _session(t1, seed, "p1")
+    assert moved["id"] == sid and moved["teacher_name"] == "ครูหนึ่ง" and moved["topic"] == "สมการเชิงเส้น"
+    assert moved["edited_by"] == "ครูหนึ่ง" and moved["edited_at"].endswith("+00:00")
+    assert _session(t1, seed, "p2") is None
+    assert t2.post("/api/attendance/sessions", json=session_body(seed, period="p2")).status_code == 200
+
+
+def test_move_onto_taken_period_rejected(seed):
+    t1 = Api("teacher1")
+    sid = t1.post("/api/attendance/sessions", json=session_body(seed, period="p2")).json()["id"]
+    Api("teacher2").post("/api/attendance/sessions", json=session_body(seed, period="p1"))
+    r = t1.post(f"/api/attendance/sessions/{sid}/move", json={"period_id": seed["p1"], "session_date": seed["today"].isoformat()})
+    assert r.status_code == 409 and "ครูสอง" in r.json()["detail"]
+    r = t1.post(f"/api/attendance/sessions/{sid}/move", json={"period_id": seed["p2"], "session_date": (seed["today"] + timedelta(days=1)).isoformat()})
+    assert r.status_code == 400
+
+
+def test_admin_move_and_edit_show_in_history(seed):
+    t1, admin = Api("teacher1"), Api("admin")
+    sid = t1.post("/api/attendance/sessions", json=session_body(seed, period="p2")).json()["id"]
+    row = t1.get("/api/attendance/sessions").json()[0]
+    assert row["edited_by"] is None and row["edited_at"] is None  # first save is not an edit
+
+    assert admin.post(f"/api/attendance/sessions/{sid}/move", json={"period_id": seed["p1"], "session_date": seed["today"].isoformat()}).status_code == 200
+    # The admin sees the session in "mine" because they changed it; teacher1 sees who changed it.
+    mine = admin.get("/api/attendance/sessions").json()
+    assert [r["id"] for r in mine] == [sid] and mine[0]["is_mine"] is False and mine[0]["edited_by"] == "แอดมิน"
+    row = t1.get("/api/attendance/sessions").json()[0]
+    assert row["period_no"] == 1 and row["edited_by"] == "แอดมิน" and row["is_mine"] is True
+
+    assert admin.post("/api/attendance/sessions", json=session_body(seed, statuses=("absent",) * 3)).status_code == 200
+    s = _session(t1, seed, "p1")
+    assert s["teacher_name"] == "ครูหนึ่ง" and s["edited_by"] == "แอดมิน"
 
 
 def test_only_present_leave_absent_allowed(seed):

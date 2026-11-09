@@ -205,6 +205,9 @@ class AttendanceSession(TimestampMixin, Base):
     teacher_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     # Set when teacher_id taught this period in place of another teacher (สอนแทน).
     substitute_for_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    # Who saved, edited or moved this session last, and when it was last changed after the first save (UTC).
+    updated_by_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    edited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     session_date: Mapped[date] = mapped_column(Date, nullable=False)
     topic: Mapped[str | None] = mapped_column(String(500), nullable=True)
     activity: Mapped[str | None] = mapped_column(Text, nullable=True)
@@ -215,6 +218,7 @@ class AttendanceSession(TimestampMixin, Base):
     period: Mapped[Period] = relationship()
     teacher: Mapped[User] = relationship(foreign_keys=[teacher_id])
     substitute_for: Mapped[User | None] = relationship(foreign_keys=[substitute_for_id])
+    updated_by: Mapped[User | None] = relationship(foreign_keys=[updated_by_id])
     records: Mapped[list["AttendanceRecord"]] = relationship(
         back_populates="session", cascade="all, delete-orphan", passive_deletes=True
     )

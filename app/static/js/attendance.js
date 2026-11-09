@@ -5,10 +5,13 @@ const els = {
   date: $("f-date"), room: $("f-room"), period: $("f-period"), area: $("f-area"), subject: $("f-subject"),
   sub: $("f-sub"), subTeacher: $("f-sub-teacher"), topic: $("f-topic"), activity: $("f-activity"), list: $("students"), summary: $("summary"),
   sheet: $("sheet"), prompt: $("prompt"), loading: $("loading"), savebar: $("savebar"),
-  save: $("save-btn"), savedInfo: $("saved-info"), noStudents: $("no-students"), warn: $("setup-warning"),
+  save: $("save-btn"), savedInfo: $("saved-info"), savedText: $("saved-text"), savedEdit: $("saved-edit"),
+  savedActions: $("saved-actions"), savedHint: $("saved-hint"), noStudents: $("no-students"), warn: $("setup-warning"),
 };
 
 let students = []; // [{id, number, name, status, note}]
+let session = null; // the saved session shown, if any
+let allPeriods = [];
 let readOnly = false;
 let dirty = false;
 let loadSeq = 0;
@@ -80,6 +83,9 @@ async function init() {
   fillSelect(els.period, opt.periods, { label: (p) => `คาบ ${p.no} (${p.start}-${p.end})`, placeholder: "เลือกคาบ" });
   allSubjects = opt.subjects;
   allRooms = opt.classrooms;
+  allPeriods = opt.periods;
+  fillSelect($("move-period"), opt.periods, { label: (p) => `คาบ ${p.no} (${p.start}-${p.end})`, placeholder: "เลือกคาบ" });
+  $("move-date").max = opt.today;
   fillSelect(els.subTeacher, opt.teachers, { placeholder: "เลือกครูที่ไม่อยู่ (สอนแทนครู...)" });
   fillAreas();
 
@@ -163,6 +169,7 @@ async function load() {
     if (seq !== loadSeq) return; // a newer selection is loading
     students = data.students.map((s) => ({ ...s, status: normalStatus(s.status) }));
     const s = data.session;
+    session = s;
     readOnly = !!(s && !s.can_edit);
     els.topic.value = s?.topic || "";
     els.activity.value = s?.activity || "";
@@ -170,8 +177,14 @@ async function load() {
     setSubstitute(s?.substitute_for_id, s?.substitute_for_name);
     if (s) {
       setSubject(String(s.subject_id));
-      els.savedInfo.textContent = `คาบนี้บันทึกแล้วโดย ${s.teacher_name} (${s.subject_name})` +
-        (readOnly ? " · ดูได้อย่างเดียว แก้ไขได้เฉพาะผู้บันทึกหรือผู้ดูแลระบบ" : " · แก้ไขแล้วกดบันทึกอีกครั้งได้");
+      els.savedText.textContent = `คาบนี้บันทึกแล้วโดย ${s.teacher_name} (${s.subject_name})` +
+        (readOnly
+          ? ` · ดูได้อย่างเดียว ถ้าคาบนี้เป็นคาบที่คุณสอน แสดงว่าอาจบันทึกผิดคาบ ให้${s.teacher_name}หรือผู้ดูแลระบบเปิดคาบนี้แล้วกด "ย้ายไปคาบอื่น"`
+          : " · แก้ไขแล้วกดบันทึกอีกครั้งได้");
+      els.savedEdit.textContent = s.edited_by ? `แก้ไขล่าสุดโดย ${s.edited_by} เมื่อ ${thaiDateTime(s.edited_at)}` : "";
+      els.savedEdit.classList.toggle("hidden", !s.edited_by);
+      els.savedActions.classList.toggle("hidden", readOnly);
+      els.savedHint.classList.toggle("hidden", readOnly);
       els.savedInfo.classList.remove("hidden");
     } else {
       els.savedInfo.classList.add("hidden");
@@ -214,6 +227,49 @@ async function save() {
   }
 }
 
+function periodLabel(id) {
+  const p = allPeriods.find((x) => String(x.id) === String(id));
+  return p ? `คาบ ${p.no}` : "คาบ ?";
+}
+
+function openMove() {
+  if (!session) return;
+  if (dirty && !confirm("มีการแก้ไขที่ยังไม่ได้บันทึก ถ้าย้ายตอนนี้ การแก้ไขนั้นจะหายไป ต้องการทำต่อหรือไม่?")) return;
+  $("move-from").textContent = `ตอนนี้อยู่ที่ ${periodLabel(els.period.value)} วันที่ ${thaiDate(els.date.value, false)} ห้อง ${els.room.selectedOptions[0]?.textContent || ""}`;
+  $("move-date").value = els.date.value;
+  $("move-period").value = "";
+  $("move-dialog").showModal();
+}
+
+async function doMove(e) {
+  e.preventDefault();
+  const date = $("move-date").value, period = $("move-period").value;
+  if (!date || !period) { toast("กรุณาเลือกวันที่และคาบที่ถูกต้อง", "error"); return; }
+  try {
+    const res = await withBusy($("move-ok"), () => api(`/api/attendance/sessions/${session.id}/move`, {
+      method: "POST", body: { period_id: Number(period), session_date: date },
+    }));
+    $("move-dialog").close();
+    dirty = false;
+    els.date.value = res.session_date;
+    els.period.value = String(res.period_id);
+    toast(`ย้ายไปคาบ ${res.period_no} แล้ว`, "success");
+    load();
+  } catch (err) { toast(err.message, "error"); }
+}
+
+async function doDelete() {
+  if (!session) return;
+  const what = `${periodLabel(els.period.value)} วันที่ ${thaiDate(els.date.value, false)} (${session.subject_name})`;
+  if (!confirm(`ลบบันทึกการสอน ${what} ทั้งหมด รวมข้อมูลมา/ลา/ขาดของนักเรียนทุกคน?\n\nลบแล้วกู้คืนไม่ได้`)) return;
+  try {
+    await withBusy($("delete-btn"), () => api(`/api/attendance/sessions/${session.id}`, { method: "DELETE" }));
+    dirty = false;
+    toast("ลบบันทึกแล้ว", "success");
+    load();
+  } catch (err) { toast(err.message, "error"); }
+}
+
 function confirmDiscard() {
   return !dirty || confirm("ยังไม่ได้บันทึกการสอน ต้องการเปลี่ยนโดยไม่บันทึกหรือไม่?");
 }
@@ -240,6 +296,10 @@ els.sub.addEventListener("change", () => { els.subTeacher.classList.toggle("hidd
 els.subTeacher.addEventListener("change", () => { dirty = true; });
 els.activity.addEventListener("input", () => { dirty = true; });
 els.save.addEventListener("click", save);
+$("move-btn").addEventListener("click", openMove);
+$("move-form").addEventListener("submit", doMove);
+$("move-cancel").addEventListener("click", () => $("move-dialog").close());
+$("delete-btn").addEventListener("click", doDelete);
 window.addEventListener("beforeunload", (e) => { if (dirty) { e.preventDefault(); e.returnValue = ""; } });
 
 init();

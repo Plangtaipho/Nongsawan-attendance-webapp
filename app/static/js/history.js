@@ -13,6 +13,9 @@ function countsText(c) {
   return STATUS.filter((s) => c[s.key]).map((s) => `${s.label} ${c[s.key]}`).join(" · ") || "-";
 }
 
+// The admin's "all teachers" view has its own recorder column.
+const showTeacher = () => !!scopeEl;
+
 function row(s) {
   const q = new URLSearchParams({ room: s.classroom_id, period: s.period_id, date: s.date });
   return h("tr", {},
@@ -20,7 +23,9 @@ function row(s) {
     h("td", {}, s.period_no),
     h("td", { class: "nowrap" }, s.classroom),
     h("td", {}, h("div", {}, s.subject), s.topic ? h("div", { class: "muted small" }, s.topic) : null,
-      s.substitute_for && !scopeEl ? h("span", { class: "badge" }, `สอนแทน ${s.substitute_for}`) : null),
+      s.substitute_for && !scopeEl ? h("span", { class: "badge" }, `สอนแทน ${s.substitute_for}`) : null,
+      !s.is_mine && !showTeacher() ? h("div", { class: "muted small" }, `ผู้บันทึก: ${s.teacher}`) : null,
+      s.edited_by ? h("div", { class: "muted small" }, `แก้ไขล่าสุดโดย ${s.edited_by} ${thaiDateTime(s.edited_at)}`) : null),
     h("td", { class: "small" }, countsText(s.counts)),
     scopeEl ? h("td", { class: "small" }, s.teacher, s.substitute_for ? h("div", { class: "muted" }, `สอนแทน ${s.substitute_for}`) : null) : null,
     h("td", {}, h("a", { href: "/?" + q, class: "btn btn-secondary btn-sm" }, "เปิด")),

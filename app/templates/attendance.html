@@ -18,7 +18,15 @@
 <div id="loading" class="loading hidden">กำลังโหลดรายชื่อ...</div>
 
 <section id="sheet" class="hidden" aria-label="รายชื่อนักเรียน">
-  <div id="saved-info" class="alert alert-info hidden"></div>
+  <div id="saved-info" class="alert alert-info hidden">
+    <div id="saved-text"></div>
+    <div id="saved-edit" class="muted small mt-1 hidden"></div>
+    <div id="saved-actions" class="actions mt-1 hidden">
+      <button id="move-btn" class="btn btn-secondary btn-sm" type="button">ย้ายไปคาบอื่น</button>
+      <button id="delete-btn" class="btn btn-danger-outline btn-sm" type="button">ลบบันทึกนี้</button>
+    </div>
+    <p id="saved-hint" class="small mt-1 mb-0 hidden">บันทึกผิดคาบหรือผิดวัน: กด "ย้ายไปคาบอื่น" ข้อมูลมา/ลา/ขาดและหัวข้อจะย้ายไปด้วย (อย่าเปลี่ยนคาบด้านบนแล้วบันทึกใหม่ เพราะคาบเดิมจะยังติดอยู่)</p>
+  </div>
   <div class="row-between">
     <div id="summary" class="summary" aria-live="polite"></div>
   </div>
@@ -41,8 +49,23 @@
   </div>
 </section>
 
+<dialog id="move-dialog">
+  <form id="move-form" method="dialog" novalidate>
+    <h2>ย้ายบันทึกไปคาบอื่น</h2>
+    <p id="move-from" class="muted small"></p>
+    <div class="grid grid-2">
+      <div class="field"><label for="move-date">วันที่ที่ถูกต้อง</label><input id="move-date" type="date" required></div>
+      <div class="field"><label for="move-period">คาบที่ถูกต้อง</label><select id="move-period" required></select></div>
+    </div>
+    <div class="actions">
+      <button class="btn" type="submit" id="move-ok">ย้าย</button>
+      <button class="btn btn-secondary" type="button" id="move-cancel">ยกเลิก</button>
+    </div>
+  </form>
+</dialog>
+
 <div id="savebar" class="savebar hidden">
   <button id="save-btn" class="btn" type="button">บันทึกการสอน</button>
 </div>
 {% endblock %}
-{% block scripts %}<script src="/static/js/attendance.js?v=15"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/attendance.js?v=16"></script>{% endblock %}

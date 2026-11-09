@@ -241,3 +241,9 @@ class SessionIn(In):
         if len(ids) != len(set(ids)):
             raise ValueError("มีรายชื่อนักเรียนซ้ำในการบันทึก")
         return v
+
+
+class SessionMoveIn(In):
+    """Move a saved check to the period/date it really belongs to (บันทึกผิดคาบ)."""
+    period_id: int
+    session_date: date

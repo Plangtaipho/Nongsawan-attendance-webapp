@@ -68,6 +68,15 @@ function thaiDate(iso, short = true) {
   return `${d} ${THAI_MONTHS[m - 1]} ${short ? String(by).slice(2) : by}`;
 }
 
+// "9 พ.ย. 69 19:05" in the device's local time, from an ISO timestamp with a UTC offset.
+function thaiDateTime(iso) {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (isNaN(d)) return "";
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getDate()} ${THAI_MONTHS[d.getMonth()]} ${String(d.getFullYear() + 543).slice(2)} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 // Build an element: h("td", {class: "num"}, "12"). Text is always set as text, never HTML.
 function h(tag, attrs = {}, ...children) {
   const el = document.createElement(tag);
